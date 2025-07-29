@@ -13,7 +13,7 @@ app.get("/api/status", (req, res) => {
       .split("\n")
       .filter(Boolean)
       .reverse()
-      .slice(0, 10);
+      .slice(0, 1000000);
     const parsed = lines.map(line => {
       const [time, ...rest] = line.split(" ");
       return {
