@@ -1,5 +1,4 @@
-// src/App.tsx
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import axios from "axios";
 import {
   LineChart,
@@ -7,7 +6,7 @@ import {
   XAxis,
   YAxis,
   Tooltip,
-  ResponsiveContainer
+  ResponsiveContainer,
 } from "recharts";
 
 interface StatusEntry {
@@ -18,7 +17,6 @@ const API_BASE = import.meta.env.VITE_API_BASE;
 
 function App() {
   const [statuses, setStatuses] = useState<StatusEntry[]>([]);
-  
 
   const fetchStatuses = async () => {
     try {
@@ -31,22 +29,43 @@ function App() {
 
   useEffect(() => {
     fetchStatuses();
-    const interval = setInterval(fetchStatuses, 5000);
+    const interval = setInterval(fetchStatuses, 30000);
     return () => clearInterval(interval);
   }, []);
 
-  const chartData = statuses
-    .map((entry) => ({
-      time: entry.time,
-      statusValue: entry.status.includes("UP") ? 1 : 0
-    }))
-    .reverse();
+  useEffect(() => {
+    const list = document.getElementById("status-list");
+    if (list) list.scrollTop = list.scrollHeight;
+  }, [statuses]);
 
-    console.log(chartData);
+  const chartData = useMemo(() => {
+    return statuses
+      .map((entry) => ({
+        time: `${entry.time} ${entry.status.slice(0, 8)}`,
+        statusValue:
+          entry.status.includes("🟢") || entry.status.includes("UP") ? 1 : 0,
+      }))
+      .reverse();
+  }, [statuses]);
+
+  const CustomTooltip = ({ active, payload, label }: any) => {
+    if (active && payload && payload.length) {
+      const status = payload[0].value === 1 ? "🟢 UP" : "🔴 DOWN";
+      return (
+        <div className="bg-white p-2 text-sm text-black rounded shadow">
+          <p>⏰ {label}</p>
+          <p>{status}</p>
+        </div>
+      );
+    }
+    return null;
+  };
 
   return (
     <div className="p-4 font-mono">
-      <h1 className="text-2xl font-bold mb-4">📡 История статусов WoW-сервера</h1>
+      <h1 className="text-2xl font-bold mb-4">
+        📡 История статусов WoW-сервера Эбобаный Эчпочмак
+      </h1>
 
       <div className="mb-6 h-64">
         {chartData.length === 0 ? (
@@ -54,17 +73,31 @@ function App() {
         ) : (
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={chartData}>
-              <XAxis dataKey="time" tick={{ fontSize: 10 }} interval='preserveStartEnd' />
-              <YAxis domain={[0, 1]} tickFormatter={(v) => (v === 1 ? "UP" : "DOWN")} />
-              <Tooltip formatter={(v) => (v === 1 ? "🟢 UP" : "🔴 DOWN")} />
-              <Line type="monotone" dataKey="statusValue" stroke="#00cc66" dot={false} strokeWidth={2} />
+              <XAxis
+                dataKey="time"
+                tick={{ fontSize: 10 }}
+                interval="preserveStartEnd"
+              />
+              <YAxis
+                domain={[0, 1]}
+                ticks={[0, 1]}
+                tickFormatter={(v) => (v === 1 ? "UP" : "DOWN")}
+              />
+              <Tooltip content={<CustomTooltip />} />
+              <Line
+                type="monotone"
+                dataKey="statusValue"
+                stroke="#00cc66"
+                dot={false}
+                strokeWidth={2}
+              />
             </LineChart>
           </ResponsiveContainer>
         )}
       </div>
 
-      <ul className="space-y-1">
-        {statuses.map((entry, i) => (
+      <ul className="space-y-1 max-h-64 overflow-auto pr-2" id="status-list">
+        {statuses.slice(0, 50).map((entry, i) => (
           <li key={i} className="text-sm">
             <span className="font-bold">[{entry.time}]</span> {entry.status}
           </li>
