@@ -1,6 +1,2 @@
 requests
 python-dotenv
-socket
-time
-datetime
-json
