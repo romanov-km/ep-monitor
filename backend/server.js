@@ -4,10 +4,11 @@ const cors = require("cors");
 const app = express();
 const PORT = process.env.PORT || 3001;
 
+
 app.use(cors());
 
 app.get("/api/status", (req, res) => {
-  const path = "../monitor/server_log.txt";
+  const path = require("path").join(__dirname, "server_log.txt");
   try {
     const lines = fs.readFileSync(path, "utf-8")
       .split("\n")
