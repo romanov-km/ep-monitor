@@ -1,6 +1,5 @@
 {
   "scripts": {
-    "preinstall": "pip install -r requirements.txt",
     "start": "concurrently \"node server.js\" \"python3 check_wow_server.py\""
   },
   "dependencies": {
