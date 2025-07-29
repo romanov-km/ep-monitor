@@ -14,13 +14,15 @@ interface StatusEntry {
   time: string;
   status: string;
 }
+const API_BASE = import.meta.env.VITE_API_BASE;
 
 function App() {
   const [statuses, setStatuses] = useState<StatusEntry[]>([]);
+  
 
   const fetchStatuses = async () => {
     try {
-      const res = await axios.get<StatusEntry[]>("/api/status");
+      const res = await axios.get<StatusEntry[]>(`${API_BASE}/api/status`);
       setStatuses(res.data);
     } catch (err) {
       console.error("Ошибка загрузки статуса:", err);
