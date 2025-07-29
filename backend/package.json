@@ -1,5 +1,10 @@
 {
+  "scripts": {
+    "preinstall": "pip install -r monitor/requirements.txt",
+    "start": "concurrently \"node server.js\" \"python3 check_wow_server.py\""
+  },
   "dependencies": {
+    "concurrently": "^9.2.0",
     "cors": "^2.8.5",
     "express": "^5.1.0"
   }
