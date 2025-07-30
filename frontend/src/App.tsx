@@ -173,7 +173,7 @@ function App() {
 
       <StatusList statuses={statuses} />
 
-      <Footer />
+      <Footer t={t}/>
 
       <Analytics />
     </div>

@@ -9,6 +9,8 @@ export const translations = {
       up: "🟢 UP",
       down: "🔴 DOWN",
       noData: "Нет данных для графика",
+      support: "Нравится проект? ",
+      donateLink: "Поддержать на Donation Alerts",
     },
     en: {
       title: "📡 WoW-server Project Epoch",
@@ -20,6 +22,8 @@ export const translations = {
       up: "🟢 UP",
       down: "🔴 DOWN",
       noData: "No data for chart",
+      support: "Like the project? ",
+      donateLink: "Support via Donation Alerts",
     },
   };
   
