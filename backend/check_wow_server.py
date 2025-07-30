@@ -6,7 +6,6 @@ import redis
 from dotenv import load_dotenv
 load_dotenv()
 import os
-from flask import Flask, jsonify
 import threading
 
 # Redis клиент
@@ -18,33 +17,6 @@ try:
 except redis.exceptions.ConnectionError as e:
     print(f"❌ Redis недоступен: {e}")
     exit(1)
-
-# Flask API
-app = Flask(__name__)
-
-@app.route("/api/users")
-def get_users():
-    try:
-        users = list(map(int, r.smembers("users")))
-        return jsonify(users)
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-
-@app.route("/api/status")
-def get_status():
-    try:
-        logs = r.lrange("logs", -100, -1)
-        parsed = []
-        for line in reversed(logs):
-            line = line.decode("utf-8")
-            time_part, *rest = line.split(" ")
-            parsed.append({
-                "time": time_part.replace("[", "").replace("]", ""),
-                "status": " ".join(rest)
-            })
-        return jsonify(parsed)
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
 
 # Константы
 BOT_TOKEN = os.getenv("BOT_TOKEN")
@@ -173,5 +145,4 @@ def monitor():
 
 # Запуск
 if __name__ == "__main__":
-    threading.Thread(target=monitor, daemon=True).start()
-    app.run(host="0.0.0.0", port=int(os.getenv("PORT", 3001)))
+    monitor()
