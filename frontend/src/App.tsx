@@ -112,15 +112,17 @@ function App() {
       try {
         const res = await axios.get(`${API_BASE}/api/chart-data`);
   
-        const toLocalHour = (utcTime: string) => {
-          const utcDate = new Date(utcTime + ":00:00Z"); // добавляем минуты, секунды и Z
-          const local = new Date(utcDate.getTime() + new Date().getTimezoneOffset() * -60000);
-  
+        const toLocalHour = (utcString: string) => {
+          // utcString = "2025-07-30 14"
+          const [date, hour] = utcString.split(" ");
+          const iso = `${date}T${hour.padStart(2, "0")}:00:00Z`; // ISO строка
+          const local = new Date(iso);
+        
           const month = String(local.getMonth() + 1).padStart(2, "0");
           const day = String(local.getDate()).padStart(2, "0");
-          const hour = String(local.getHours()).padStart(2, "0");
-  
-          return `${month}-${day} ${hour}:00`;
+          const hourLocal = String(local.getHours()).padStart(2, "0");
+        
+          return `${month}-${day} ${hourLocal}:00`;
         };
   
         const transformed = res.data.map((point: { time: string; statusValue: number }) => ({
