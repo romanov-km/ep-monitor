@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import axios from "axios";
 import { translations } from "./locales";
 import LanguageSwitcher from "./components/LanguageSwitcher"; // Компонент переключения языка
@@ -120,6 +120,19 @@ function App() {
     fetchChartData();
   }, []);
 
+  const formattedChartData = useMemo(() => {
+    return chartData.map(point => {
+      const date = new Date(point.time + ":00:00");
+      const local = new Date(date.getTime() + date.getTimezoneOffset() * 60000);
+      const formatted = `${String(local.getMonth() + 1).padStart(2, "0")}-${String(local.getDate()).padStart(2, "0")} ${String(local.getHours()).padStart(2, "0")}:${String(local.getMinutes()).padStart(2, "0")}`;
+  
+      return {
+        time: formatted,
+        statusValue: point.statusValue
+      };
+    });
+  }, [chartData]);
+
   const latestStatusEntry = statuses[0];
   const isServerUp = latestStatusEntry ? parseStatus(latestStatusEntry) : false;
 
@@ -150,7 +163,7 @@ function App() {
         </span>
       </p>
 
-      <StatusChart chartData={chartData} />
+      <StatusChart chartData={formattedChartData} />
 
       <StatusList statuses={statuses} />
 
