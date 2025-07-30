@@ -1,6 +1,6 @@
 {
   "scripts": {
-    "start": "concurrently \"node server.js\" \"python3 check_wow_server.py\""
+    "start": "node server.js"
   },
   "dependencies": {
     "concurrently": "^9.2.0",

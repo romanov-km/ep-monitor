@@ -23,7 +23,7 @@ BOT_TOKEN = os.getenv("BOT_TOKEN")
 DISCORD_WEBHOOK_URL = os.getenv("DISCORD_WEBHOOK_URL")
 HOST = "game.project-epoch.net"
 PORT = 3724
-CHECK_INTERVAL = 5
+CHECK_INTERVAL = 60
 LAST_UPDATE_ID = 0
 
 # Telegram
