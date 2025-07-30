@@ -111,7 +111,24 @@ function App() {
     const fetchChartData = async () => {
       try {
         const res = await axios.get(`${API_BASE}/api/chart-data`);
-        setChartData(res.data);
+  
+        const toLocalHour = (utcTime: string) => {
+          const utcDate = new Date(utcTime + ":00:00Z"); // добавляем минуты, секунды и Z
+          const local = new Date(utcDate.getTime() + new Date().getTimezoneOffset() * -60000);
+  
+          const month = String(local.getMonth() + 1).padStart(2, "0");
+          const day = String(local.getDate()).padStart(2, "0");
+          const hour = String(local.getHours()).padStart(2, "0");
+  
+          return `${month}-${day} ${hour}:00`;
+        };
+  
+        const transformed = res.data.map((point: { time: string; statusValue: number }) => ({
+          time: toLocalHour(point.time),
+          statusValue: point.statusValue,
+        }));
+  
+        setChartData(transformed);
       } catch (err) {
         console.error("Ошибка загрузки данных для графика:", err);
       }
@@ -119,19 +136,6 @@ function App() {
   
     fetchChartData();
   }, []);
-
-  const formattedChartData = useMemo(() => {
-    return chartData.map(point => {
-      const date = new Date(point.time + ":00:00");
-      const local = new Date(date.getTime() + date.getTimezoneOffset() * 60000);
-      const formatted = `${String(local.getMonth() + 1).padStart(2, "0")}-${String(local.getDate()).padStart(2, "0")} ${String(local.getHours()).padStart(2, "0")}:${String(local.getMinutes()).padStart(2, "0")}`;
-  
-      return {
-        time: formatted,
-        statusValue: point.statusValue
-      };
-    });
-  }, [chartData]);
 
   const latestStatusEntry = statuses[0];
   const isServerUp = latestStatusEntry ? parseStatus(latestStatusEntry) : false;
@@ -163,7 +167,7 @@ function App() {
         </span>
       </p>
 
-      <StatusChart chartData={formattedChartData} />
+      <StatusChart chartData={chartData} />
 
       <StatusList statuses={statuses} />
 
