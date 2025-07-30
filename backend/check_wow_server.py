@@ -4,6 +4,7 @@ import requests
 from datetime import datetime
 import json
 from dotenv import load_dotenv
+import os
 
 load_dotenv()
 
