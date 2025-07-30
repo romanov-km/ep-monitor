@@ -24,19 +24,35 @@ function parseStatus(entry: StatusEntry): boolean {
 
 function App() {
   const [statuses, setStatuses] = useState<StatusEntry[]>([]);
-  const [language, setLanguage] = useState<"ru" | "en">("ru");
+  const [language, setLanguage] = useState<"ru" | "en">("en");
   const t = translations[language];
 
   const [alertEnabled, setAlertEnabled] = useState(true);
   const [volume, setVolume] = useState(1);
-  const [soundType, setSoundType] = useState("default");
+  const [soundType, setSoundType] = useState("BG");
+
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   const playSound = () => {
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.currentTime = 0;
+    }
+  
     const audio = new Audio(`/sounds/${soundType}.mp3`);
     audio.volume = volume;
+    audioRef.current = audio;
+  
     audio
       .play()
       .catch((err) => console.error("Ошибка при воспроизведении звука:", err));
+  };
+
+  const stopSound = () => {
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.currentTime = 0;
+    }
   };
 
   const playTestSound = () => {
@@ -127,6 +143,7 @@ function App() {
         soundType={soundType}
         setSoundType={setSoundType}
         playTestSound={playTestSound}
+        stopSound={stopSound}
       />
 
       <h1 className="text-1xl font-bold mb-4">{t.title}</h1>
@@ -145,6 +162,7 @@ function App() {
       <StatusChart chartData={chartData} />
 
       <StatusList statuses={statuses} />
+      
     </div>
   );
 }

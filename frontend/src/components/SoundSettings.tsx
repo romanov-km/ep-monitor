@@ -8,6 +8,7 @@ interface SoundSettingsProps {
   soundType: string;
   setSoundType: (value: string) => void;
   playTestSound: () => void;
+  stopSound: () => void;
 }
 
 const SoundSettings: React.FC<SoundSettingsProps> = ({
@@ -18,6 +19,7 @@ const SoundSettings: React.FC<SoundSettingsProps> = ({
   soundType,
   setSoundType,
   playTestSound,
+  stopSound,
 }) => {
   return (
     <div className="flex justify-between items-center bg-black text-white px-4 py-2 border-b border-gray-700">
@@ -66,9 +68,15 @@ const SoundSettings: React.FC<SoundSettingsProps> = ({
 
             <button
               onClick={playTestSound}
-              className="text-blue-400 underline text-sm mt-1"
+              className="text-blue-400 text-sm mt-1"
             >
               TEST SOUND
+            </button>
+            <button
+              onClick={stopSound}
+              className="text-blue-400 text-sm mt-1"
+            >
+              ⏹️ Stop Sound
             </button>
           </div>
         </div>
