@@ -11,7 +11,7 @@ interface StatusListProps {
 
 const StatusList: React.FC<StatusListProps> = ({ statuses }) => {
   return (
-    <ul className="space-y-1 max-h-64 overflow-auto pr-2" id="status-list">
+    <ul className="space-y-1 max-h-40 overflow-auto pr-2" id="status-list">
       {statuses
         .slice(0, 50)
         .map((entry, i) => (

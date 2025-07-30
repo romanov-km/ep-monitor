@@ -7,6 +7,7 @@ import TelegramBlock from "./components/TelegramBlock";
 import StatusChart from "./components/StatusChart";
 import StatusList from "./components/StatusList";
 import SoundSettings from "./components/SoundSettings";
+import Footer from "./components/Footer";
 
 interface StatusEntry {
   time: string;
@@ -38,11 +39,11 @@ function App() {
       audioRef.current.pause();
       audioRef.current.currentTime = 0;
     }
-  
+
     const audio = new Audio(`/sounds/${soundType}.mp3`);
     audio.volume = volume;
     audioRef.current = audio;
-  
+
     audio
       .play()
       .catch((err) => console.error("Ошибка при воспроизведении звука:", err));
@@ -162,7 +163,7 @@ function App() {
       <StatusChart chartData={chartData} />
 
       <StatusList statuses={statuses} />
-      
+      <Footer />
     </div>
   );
 }
