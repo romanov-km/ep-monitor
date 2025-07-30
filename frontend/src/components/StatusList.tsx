@@ -38,8 +38,7 @@ const StatusList: React.FC<StatusListProps> = ({ statuses }) => {
               <span className="font-bold">[{localTime}]</span> {cleanStatus}
             </li>
           );
-        })
-        .reverse()}
+        })}
     </ul>
   );
 };
