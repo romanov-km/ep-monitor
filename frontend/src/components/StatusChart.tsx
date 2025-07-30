@@ -43,8 +43,18 @@ const StatusChart: React.FC<StatusChartProps> = ({ chartData }) => {
               tick={{ fontSize: 10 }}
               interval="preserveStartEnd"
               minTickGap={50}
+              tickFormatter={(str) => {
+                const [date, time] = str.split(" ");
+                return `${time}\n${date}`;
+              }}
             />
             <YAxis
+              label={{
+                value: "Status",
+                angle: -90,
+                position: "insideLeft",
+                offset: 10,
+              }}
               domain={[0, 1]}
               ticks={[0, 1]}
               tickFormatter={(v) => (v === 1 ? "UP" : "DOWN")}

@@ -26,6 +26,8 @@ function parseStatus(entry: StatusEntry): boolean {
 
 function App() {
   const [statuses, setStatuses] = useState<StatusEntry[]>([]);
+  const [chartData, setChartData] = useState<{ time: string; statusValue: number }[]>([]);
+
   const [language, setLanguage] = useState<"ru" | "en">("en");
   const t = translations[language];
 
@@ -86,6 +88,7 @@ function App() {
     }
   };
 
+
   useEffect(() => {
     const savedLang = localStorage.getItem("lang");
     if (savedLang === "ru" || savedLang === "en") {
@@ -105,31 +108,18 @@ function App() {
     if (list) list.scrollTop = list.scrollHeight;
   }, [statuses]);
 
-  const chartData = useMemo(() => {
-    return statuses
-      .map((entry) => {
-        const rawDate = entry.time;
-        const rawTime = entry.status.slice(0, 8);
-        const utcString = `${rawDate}T${rawTime}Z`;
-        const localDate = new Date(utcString);
-
-        const formatted = `${String(localDate.getMonth() + 1).padStart(
-          2,
-          "0"
-        )}-${String(localDate.getDate()).padStart(2, "0")} ${localDate
-          .getHours()
-          .toString()
-          .padStart(2, "0")}:${localDate
-          .getMinutes()
-          .toString()
-          .padStart(2, "0")}`;
-
-        return {
-          time: formatted,
-          statusValue: parseStatus(entry) ? 1 : 0,
-        };
-      });
-  }, [statuses]);
+  useEffect(() => {
+    const fetchChartData = async () => {
+      try {
+        const res = await axios.get(`${API_BASE}/api/chart-data`);
+        setChartData(res.data);
+      } catch (err) {
+        console.error("Ошибка загрузки данных для графика:", err);
+      }
+    };
+  
+    fetchChartData();
+  }, []);
 
   const latestStatusEntry = statuses[0];
   const isServerUp = latestStatusEntry ? parseStatus(latestStatusEntry) : false;
