@@ -91,7 +91,7 @@ function App() {
       setLanguage(savedLang);
     }
     fetchStatuses();
-    const interval = setInterval(fetchStatuses, 30000);
+    const interval = setInterval(fetchStatuses, 60000);
     return () => clearInterval(interval);
   }, []);
 
