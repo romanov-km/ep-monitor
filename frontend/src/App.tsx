@@ -127,8 +127,7 @@ function App() {
           time: formatted,
           statusValue: parseStatus(entry) ? 1 : 0,
         };
-      })
-      .reverse();
+      });
   }, [statuses]);
 
   const latestStatusEntry = statuses[0];
