@@ -1,31 +1,51 @@
 const express = require("express");
-const fs = require("fs");
 const cors = require("cors");
+const { createClient } = require("redis");
+require("dotenv").config();
+
 const app = express();
 const PORT = process.env.PORT || 3001;
 
+if (!process.env.REDIS_URL) {
+  console.error("❌ REDIS_URL не задан в переменных среды!");
+  process.exit(1);
+}
 
-app.use(cors());
+const redis = createClient({ url: process.env.REDIS_URL });
+redis.connect().catch((err) => {
+  console.error("❌ Ошибка подключения к Redis:", err);
+  process.exit(1);
+});
 
-app.get("/api/status", (req, res) => {
-  const path = require("path").join(__dirname, "server_log.txt");
+app.get("/api/health", async (req, res) => {
   try {
-    const lines = fs.readFileSync(path, "utf-8")
-      .split("\n")
-      .filter(Boolean)
-      .reverse()
-      .slice(0, 1000000);
-    const parsed = lines.map(line => {
-      const [time, ...rest] = line.split(" ");
-      return {
-        time: time.replace("[", "").replace("]", ""),
-        status: rest.join(" ")
-      };
-    });
-    res.json(parsed);
+    await redis.ping();
+    res.status(200).send("🟢 OK");
   } catch (e) {
-    res.status(500).json({ error: "Can't read logs." });
+    res.status(500).send("🔴 Redis недоступен");
   }
 });
 
-app.listen(PORT, () => console.log(`🟢 API listening on ${PORT}`));
+app.use(cors());
+
+app.get("/api/status", async (req, res) => {
+  try {
+    const lines = await redis.lRange("logs", -1000, -1);
+    const parsed = lines
+      .reverse()
+      .map(line => {
+        const [time, ...rest] = line.split(" ");
+        return {
+          time: time.replace("[", "").replace("]", ""),
+          status: rest.join(" ")
+        };
+      });
+    res.json(parsed);
+  } catch (e) {
+    res.status(500).json({ error: "Can't read logs from Redis." });
+  }
+});
+
+app.listen(PORT, () =>
+  console.log(`🚀 Сервер API запущен на http://localhost:${PORT}`)
+);
