@@ -8,10 +8,16 @@ import StatusChart from "./components/StatusChart";
 import StatusList from "./components/StatusList";
 import SoundSettings from "./components/SoundSettings";
 import Footer from "./components/Footer";
+import { Analytics } from "@vercel/analytics/next"
 
 interface StatusEntry {
   time: string;
   status: string;
+}
+
+interface ChartEntry {
+  time: string;
+  statusValue: 0 | 1;
 }
 
 const API_BASE = import.meta.env.VITE_API_BASE;
@@ -25,6 +31,7 @@ function parseStatus(entry: StatusEntry): boolean {
 
 function App() {
   const [statuses, setStatuses] = useState<StatusEntry[]>([]);
+  const [chartData, setChartData] = useState<ChartEntry[]>([]);
   const [language, setLanguage] = useState<"ru" | "en">("en");
   const t = translations[language];
 
@@ -134,6 +141,7 @@ function App() {
   const isServerUp = latestStatusEntry ? parseStatus(latestStatusEntry) : false;
 
   return (
+    
     <div className="p-4 font-mono">
       <SoundSettings
         alertEnabled={alertEnabled}
@@ -145,7 +153,7 @@ function App() {
         playTestSound={playTestSound}
         stopSound={stopSound}
       />
-
+      
       <h1 className="text-1xl font-bold mb-4">{t.title}</h1>
 
       <LanguageSwitcher language={language} setLanguage={setLanguage} />
@@ -162,7 +170,10 @@ function App() {
       <StatusChart chartData={chartData} />
 
       <StatusList statuses={statuses} />
+
       <Footer />
+      
+      <Analytics/>
     </div>
   );
 }
