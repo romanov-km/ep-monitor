@@ -15,11 +15,6 @@ interface StatusEntry {
   status: string;
 }
 
-interface ChartEntry {
-  time: string;
-  statusValue: 0 | 1;
-}
-
 const API_BASE = import.meta.env.VITE_API_BASE;
 
 // Унифицированная функция для определения, что сервер работает
@@ -31,7 +26,6 @@ function parseStatus(entry: StatusEntry): boolean {
 
 function App() {
   const [statuses, setStatuses] = useState<StatusEntry[]>([]);
-  const [chartData, setChartData] = useState<ChartEntry[]>([]);
   const [language, setLanguage] = useState<"ru" | "en">("en");
   const t = translations[language];
 
@@ -172,7 +166,7 @@ function App() {
       <StatusList statuses={statuses} />
 
       <Footer />
-      
+
       <Analytics/>
     </div>
   );
