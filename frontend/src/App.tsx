@@ -8,7 +8,7 @@ import StatusChart from "./components/StatusChart";
 import StatusList from "./components/StatusList";
 import SoundSettings from "./components/SoundSettings";
 import Footer from "./components/Footer";
-import { Analytics } from "@vercel/analytics/next"
+import { Analytics } from '@vercel/analytics/react';
 
 interface StatusEntry {
   time: string;
@@ -167,7 +167,7 @@ function App() {
 
       <Footer />
 
-      <Analytics/>
+      <Analytics />
     </div>
   );
 }
