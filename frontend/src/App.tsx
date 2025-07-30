@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import axios from "axios";
 import { translations } from "./locales";
 import LanguageSwitcher from "./components/LanguageSwitcher"; // Компонент переключения языка
