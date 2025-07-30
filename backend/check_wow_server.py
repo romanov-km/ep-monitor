@@ -2,13 +2,12 @@ import socket
 import time
 import requests
 from datetime import datetime
-import os
 import redis
 from dotenv import load_dotenv
+load_dotenv()
+import os
 from flask import Flask, jsonify
 import threading
-
-load_dotenv()
 
 # Redis клиент
 r = redis.Redis.from_url(os.getenv("REDIS_URL"))
