@@ -46,6 +46,48 @@ app.get("/api/status", async (req, res) => {
   }
 });
 
+const groupBy = (array, keyFn) => {
+  return array.reduce((result, item) => {
+    const key = keyFn(item);
+    result[key] = result[key] || [];
+    result[key].push(item);
+    return result;
+  }, {});
+};
+
+app.get("/api/chart-data", async (req, res) => {
+  try {
+    const rawLogs = await redis.lRange("logs", -5000, -1); // 1000 записей
+
+    const parsed = rawLogs.map(line => {
+      const match = line.match(/^\[(.*?)\] Authserver status: (🟢|🔴) (UP|DOWN)/);
+      if (!match) return null;
+
+      const timestamp = new Date(match[1]);
+      return {
+        hour: timestamp.toISOString().slice(0, 13), // YYYY-MM-DDTHH
+        status: match[3], // UP или DOWN
+      };
+    }).filter(Boolean);
+
+    const grouped = groupBy(parsed, item => item.hour);
+
+    const chartData = Object.entries(grouped).map(([hour, entries]) => {
+      const ups = entries.filter(e => e.status === "UP").length;
+      const downs = entries.length - ups;
+      return {
+        time: hour.replace("T", " "), // более читабельно
+        statusValue: ups >= downs ? 1 : 0,
+      };
+    });
+
+    res.json(chartData.reverse());
+  } catch (e) {
+    console.error("Ошибка агрегации графика:", e);
+    res.status(500).json({ error: "Failed to get chart data." });
+  }
+});
+
 app.listen(PORT, () =>
   console.log(`🚀 Сервер API запущен на http://localhost:${PORT}`)
 );
