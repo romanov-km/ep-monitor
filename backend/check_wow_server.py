@@ -3,14 +3,17 @@ import time
 import requests
 from datetime import datetime
 import json
+from dotenv import load_dotenv
 
+load_dotenv()
+
+BOT_TOKEN = os.getenv("BOT_TOKEN")
+DISCORD_WEBHOOK_URL = os.getenv("DISCORD_WEBHOOK_URL")
+CHAT_ID = os.getenv("CHAT_ID")
 
 HOST = "game.project-epoch.net"  # IP или домен # или домен, например game.project-epoch.net 198.18.0.18 198.246.145.233  198.244.165.233:3724
 PORT = 3724
-DISCORD_WEBHOOK_URL = "https://discord.com/api/webhooks/1399747956151681135/XaHa4dtokudNKBoKp9pm1uo5jt1s6aUkWRpK6I1gS12d86Ksy87g8uKsfO7e0G5v8920"
 CHECK_INTERVAL = 5  # секунд
-BOT_TOKEN = '7941524118:AAGhLwU3RKyj1HTsDgHf9qGmHjBdq4V1IFs'
-CHAT_ID = '107510373'
 USERS_FILE = "users.txt"
 LAST_UPDATE_ID = 0
 
@@ -137,7 +140,7 @@ def main():
         current_status = "UP" if is_up else "DOWN"
         log_status(current_status)
 
-        if current_status != last_status:
+        if last_status is not None and current_status != last_status:
             icon = "🟢" if current_status == "UP" else "🔴"
             message = f"Сервер: {HOST}:{PORT} {icon} {current_status}"
             send_telegram_message_to_all(message)
