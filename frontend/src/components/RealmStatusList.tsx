@@ -1,28 +1,16 @@
-import React, { useEffect, useState } from "react";
-import type { RealmStatus } from "../types/realm";
-import axios from "axios";
+import React, { useEffect } from "react";
+import { realmStore } from "../stores/realmStore";
+import { observer } from "mobx-react-lite";
 
-const API_BASE = import.meta.env.VITE_API_BASE;
-
-export const RealmStatusList: React.FC = () => {
-  const [realms, setRealms] = useState<RealmStatus[]>([]);
-  const [loading, setLoading] = useState(true);
+export const RealmStatusList: React.FC = observer(() => {
 
   useEffect(() => {
-    const fetchRealmData = async () => {
-      try {
-        const res = await axios.get(`${API_BASE}/api/realm-status`);
-        setRealms(res.data);
-      } catch (err) {
-        console.error("Ошибка загрузки данных для рилмов:", err);
-      } finally {
-        setLoading(false)
-      }
-    };
-    fetchRealmData();
+    realmStore.fetchRealms();
+    const interval = setInterval(() => {realmStore.fetchRealms()}, 600000);
+    return () => clearInterval(interval);
   }, []);
 
-  if (loading)
+  if (realmStore.isLoading)
     return (
       <div className="text-center py-4 text-gray-400 text-sm">
         Loading realm statuses...
@@ -32,7 +20,7 @@ export const RealmStatusList: React.FC = () => {
   return (
     <div className="flex p-4 px-2 justify-center">
       <div className="flex space-x-4 overflow-x-auto">
-        {realms.map((realm, idx) => {
+        {realmStore.realms.map((realm, idx) => {
           // Преобразуем строку "2025-07-31 13:30:47" → "2025-07-31T13:30:47Z"
           const utcDateStr = realm.time.replace(" ", "T") + "Z";
           const date = new Date(utcDateStr);
@@ -78,4 +66,4 @@ export const RealmStatusList: React.FC = () => {
       </div>
     </div>
   );
-};
+});
