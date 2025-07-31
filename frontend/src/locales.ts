@@ -5,7 +5,7 @@ export const translations = {
       telegramBody:
         "Подключи @epoch_monitoring_bot — и получай уведомления, когда сервер падает или снова встаёт!",
       instant: "🔔 Уведомления приходят мгновенно. Подключение — в 1 клик.",
-      lastStatus: "Последний статус",
+      lastStatus: "Последний статус сервера Авторизации",
       up: "🟢 UP",
       down: "🔴 DOWN",
       noData: "Нет данных для графика",
@@ -18,7 +18,7 @@ export const translations = {
       telegramBody:
         "Connect to @epoch_monitoring_bot — and receive alerts when the server goes down or comes back up!",
       instant: "🔔 Notifications arrive instantly. One-click connection.",
-      lastStatus: "Last status",
+      lastStatus: "Last status Authserver",
       up: "🟢 UP",
       down: "🔴 DOWN",
       noData: "No data for chart",

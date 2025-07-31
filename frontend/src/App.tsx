@@ -7,8 +7,9 @@ import StatusChart from "./components/StatusChart";
 import StatusList from "./components/StatusList";
 import SoundSettings from "./components/SoundSettings";
 import Footer from "./components/Footer";
-import { Analytics } from '@vercel/analytics/react';
-import { SpeedInsights } from "@vercel/speed-insights/react"
+import { Analytics } from "@vercel/analytics/react";
+import { SpeedInsights } from "@vercel/speed-insights/react";
+import { RealmStatusList } from "./components/RealmStatusList";
 
 interface StatusEntry {
   time: string;
@@ -26,7 +27,9 @@ function parseStatus(entry: StatusEntry): boolean {
 
 function App() {
   const [statuses, setStatuses] = useState<StatusEntry[]>([]);
-  const [chartData, setChartData] = useState<{ time: string; statusValue: number }[]>([]);
+  const [chartData, setChartData] = useState<
+    { time: string; statusValue: number }[]
+  >([]);
 
   const [language, setLanguage] = useState<"ru" | "en">("en");
   const t = translations[language];
@@ -88,7 +91,6 @@ function App() {
     }
   };
 
-
   useEffect(() => {
     const savedLang = localStorage.getItem("lang");
     if (savedLang === "ru" || savedLang === "en") {
@@ -112,31 +114,33 @@ function App() {
     const fetchChartData = async () => {
       try {
         const res = await axios.get(`${API_BASE}/api/chart-data`);
-  
+
         const toLocalHour = (utcString: string) => {
           // utcString = "2025-07-30 14"
           const [date, hour] = utcString.split(" ");
           const iso = `${date}T${hour.padStart(2, "0")}:00:00Z`; // ISO строка
           const local = new Date(iso);
-        
+
           const month = String(local.getMonth() + 1).padStart(2, "0");
           const day = String(local.getDate()).padStart(2, "0");
           const hourLocal = String(local.getHours()).padStart(2, "0");
-        
+
           return `${month}-${day} ${hourLocal}:00`;
         };
-  
-        const transformed = res.data.map((point: { time: string; statusValue: number }) => ({
-          time: toLocalHour(point.time),
-          statusValue: point.statusValue,
-        }));
-  
+
+        const transformed = res.data.map(
+          (point: { time: string; statusValue: number }) => ({
+            time: toLocalHour(point.time),
+            statusValue: point.statusValue,
+          })
+        );
+
         setChartData(transformed);
       } catch (err) {
         console.error("Ошибка загрузки данных для графика:", err);
       }
     };
-  
+
     fetchChartData();
   }, []);
 
@@ -144,7 +148,6 @@ function App() {
   const isServerUp = latestStatusEntry ? parseStatus(latestStatusEntry) : false;
 
   return (
-    
     <div className="p-4 font-mono">
       <SoundSettings
         alertEnabled={alertEnabled}
@@ -156,7 +159,7 @@ function App() {
         playTestSound={playTestSound}
         stopSound={stopSound}
       />
-      
+
       <h1 className="text-1xl font-bold mb-4">{t.title}</h1>
 
       <LanguageSwitcher language={language} setLanguage={setLanguage} />
@@ -169,12 +172,13 @@ function App() {
           {isServerUp ? t.up : t.down}
         </span>
       </p>
+      <RealmStatusList />
 
       <StatusChart chartData={chartData} />
 
       <StatusList statuses={statuses} />
 
-      <Footer t={t}/>
+      <Footer t={t} />
 
       <SpeedInsights />
 
