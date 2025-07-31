@@ -88,6 +88,83 @@ app.get("/api/chart-data", async (req, res) => {
   }
 });
 
+app.get("/api/realm-chart", async (req, res) => {
+  try {
+    const realms = ["Kezan_PVE", "Gurubashi_PVP"];
+    const result = {};
+
+    for (const realmKey of realms) {
+      const rawLogs = await redis.lRange(`logs:${realmKey}`, -500, -1);
+
+      const parsed = rawLogs.map(line => {
+        const match = line.match(/^\[(.*?)\] Realm (.*) status: (🟢|🔴) (UP|DOWN)/);
+        if (!match) return null;
+
+        const timestamp = new Date(match[1]);
+        return {
+          hour: timestamp.toISOString().slice(0, 13), // YYYY-MM-DDTHH
+          status: match[4], // UP or DOWN
+        };
+      }).filter(Boolean);
+
+      const groupedByHour = groupBy(parsed, item => item.hour);
+
+      const chartPoints = Object.entries(groupedByHour).map(([hour, logs]) => {
+        const ups = logs.filter(l => l.status === "UP").length;
+        const downs = logs.length - ups;
+        return {
+          time: hour.replace("T", " "),
+          statusValue: ups >= downs ? 1 : 0,
+        };
+      });
+
+      result[realmKey.replace("_", " ")] = chartPoints.reverse();
+    }
+
+    res.json(result);
+  } catch (e) {
+    console.error("Ошибка realm-графика:", e);
+    res.status(500).json({ error: "Failed to get realm chart data." });
+  }
+});
+
+
+app.get("/api/realm-status", async (req, res) => {
+  try {
+    // список реалмов (можно вынести в .env или в Redis позже)
+    const realms = [
+      "Kezan_PVE",
+      "Gurubashi_PVP"
+    ];
+
+    const statuses = [];
+
+    for (const realmKey of realms) {
+      const logs = await redis.lRange(`logs:${realmKey}`, 0, 0); // только последний лог
+      if (!logs.length) continue;
+
+      const line = logs[0];
+      const match = line.match(/^\[(.*?)\] Realm (.*) status: (🟢|🔴) (UP|DOWN)/);
+      if (!match) continue;
+
+      const [, time, name, icon, status] = match;
+
+      statuses.push({
+        name,
+        time,
+        icon,
+        status,
+      });
+    }
+
+    res.json(statuses);
+  } catch (err) {
+    console.error("Ошибка /api/realm-status:", err);
+    res.status(500).json({ error: "Failed to get realm statuses" });
+  }
+});
+
+
 app.listen(PORT, () =>
   console.log(`🚀 Сервер API запущен на http://localhost:${PORT}`)
 );

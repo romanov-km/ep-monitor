@@ -26,6 +26,11 @@ PORT = 3724
 CHECK_INTERVAL = 60
 LAST_UPDATE_ID = 0
 
+REALMS = [
+    {"name": "Kezan PVE", "host": "game.project-epoch.net", "port": 8085},
+    {"name": "Gurubashi PVP", "host": "game.project-epoch.net", "port": 8086},
+]
+
 # Telegram
 def load_users():
     try:
@@ -97,9 +102,8 @@ def update_new_users():
         print(f"⚠️ Failed to get updates: {e}")
 
 # Discord
-def send_discord_message(status):
-    icon = "🟢" if status == "UP" else "🔴"
-    payload = {"content": f"Authserver status changed: {icon} {status}"}
+def send_discord_message(message):
+    payload = {"content": message}
     try:
         resp = requests.post(DISCORD_WEBHOOK_URL, json=payload, timeout=5)
         if resp.status_code != 204:
@@ -129,18 +133,51 @@ def log_status(status):
     r.ltrim("logs", 0, 999)
 
 # Основной цикл
+
 def monitor():
-    last_status = None
+    global last_auth_status
+    last_auth_status = None
+    last_realm_statuses = {}
+
     print("🚀 Мониторинг запущен...")
+
     while True:
         update_new_users()
-        is_up = check_tcp_port(HOST, PORT)
-        status = "UP" if is_up else "DOWN"
-        log_status(status)
-        if last_status is not None and status != last_status:
-            send_telegram_message_to_all(check_server_status_text())
-            send_discord_message(status)
-        last_status = status
+
+        # 🔐 Проверка Auth-сервера
+        auth_is_up = check_tcp_port(HOST, PORT)
+        auth_status = "UP" if auth_is_up else "DOWN"
+        log_status(auth_status)
+        if last_auth_status is not None and auth_status != last_auth_status:
+            #send_telegram_message_to_all(check_server_status_text())
+            send_discord_message(auth_status)
+        last_auth_status = auth_status
+
+        # 🌐 Проверка реалмов
+        for realm in REALMS:
+            is_up = check_tcp_port(realm["host"], realm["port"])
+            status = "UP" if is_up else "DOWN"
+            name = realm["name"]
+            timestamp = datetime.now().strftime("[%Y-%m-%d %H:%M:%S]")
+            icon = "🟢" if status == "UP" else "🔴"
+            msg = f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Realm {realm['name']} status: {icon} {status}"
+            print(msg)
+
+            redis_key = f"logs:{realm['name'].replace(' ', '_')}"
+            try:
+                r.lpush(redis_key, msg)
+                r.ltrim(redis_key, 0, 499)
+            except Exception as e:
+                print(f"⚠️ Redis error for realm {realm['name']}: {e}")
+
+            # Отправка алертов только при смене статуса
+            last = last_realm_statuses.get(realm["name"])
+            if last is not None and last != status:
+                #send_telegram_message_to_all(msg)
+                send_discord_message(auth_status)
+                send_discord_message(f"Realm {name} status changed: {icon} {status}")
+            last_realm_statuses[realm["name"]] = status
+
         time.sleep(CHECK_INTERVAL)
 
 # Запуск
