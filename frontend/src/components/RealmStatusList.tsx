@@ -30,7 +30,7 @@ export const RealmStatusList: React.FC = () => {
     );
 
   return (
-    <div className="flex p-4 justify-center">
+    <div className="flex p-4 px-2 justify-center">
       <div className="flex space-x-4 overflow-x-auto">
         {realms.map((realm, idx) => {
           // Преобразуем строку "2025-07-31 13:30:47" → "2025-07-31T13:30:47Z"
@@ -41,7 +41,7 @@ export const RealmStatusList: React.FC = () => {
           return (
             <div
               key={idx}
-              className="flex-shrink-0 border border-gray-600 rounded-md p-3 w-64 bg-gray-900 text-gray-300"
+              className=" border border-gray-600 rounded-md p-3 bg-gray-900 text-gray-300"
             >
               <div className="flex items-center justify-between mb-1">
                 <span className="text-xl">{realm.icon}</span>
