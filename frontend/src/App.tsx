@@ -8,6 +8,7 @@ import StatusList from "./components/StatusList";
 import SoundSettings from "./components/SoundSettings";
 import Footer from "./components/Footer";
 import { Analytics } from '@vercel/analytics/react';
+import { SpeedInsights } from "@vercel/speed-insights/react"
 
 interface StatusEntry {
   time: string;
@@ -174,6 +175,8 @@ function App() {
       <StatusList statuses={statuses} />
 
       <Footer t={t}/>
+
+      <SpeedInsights />
 
       <Analytics />
     </div>
