@@ -149,7 +149,7 @@ def monitor():
         auth_status = "UP" if auth_is_up else "DOWN"
         log_status(auth_status)
         if last_auth_status is not None and auth_status != last_auth_status:
-            #send_telegram_message_to_all(check_server_status_text())
+            send_telegram_message_to_all(check_server_status_text())
             send_discord_message(auth_status)
         last_auth_status = auth_status
 
@@ -173,7 +173,7 @@ def monitor():
             # Отправка алертов только при смене статуса
             last = last_realm_statuses.get(realm["name"])
             if last is not None and last != status:
-                #send_telegram_message_to_all(msg)
+                send_telegram_message_to_all(msg)
                 send_discord_message(auth_status)
                 send_discord_message(f"Realm {name} status changed: {icon} {status}")
             last_realm_statuses[realm["name"]] = status
