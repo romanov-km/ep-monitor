@@ -1,21 +1,25 @@
 import React, { useEffect, useState } from "react";
 import type { RealmStatus } from "../types/realm";
+import axios from "axios";
+
+const API_BASE = import.meta.env.VITE_API_BASE;
 
 export const RealmStatusList: React.FC = () => {
   const [realms, setRealms] = useState<RealmStatus[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch("/api/realm-status")
-      .then((res) => res.json())
-      .then((data: RealmStatus[]) => {
-        setRealms(data);
-        setLoading(false);
-      })
-      .catch((err) => {
-        console.error("Failed to fetch realm status", err);
-        setLoading(false);
-      });
+    const fetchRealmData = async () => {
+      try {
+        const res = await axios.get(`${API_BASE}/api/realm-status`);
+        setRealms(res.data);
+      } catch (err) {
+        console.error("Ошибка загрузки данных для рилмов:", err);
+      } finally {
+        setLoading(false)
+      }
+    };
+    fetchRealmData();
   }, []);
 
   if (loading)
