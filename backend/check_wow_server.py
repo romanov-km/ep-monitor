@@ -132,54 +132,68 @@ def log_status(status):
     r.lpush("logs", msg)
     r.ltrim("logs", 0, 999)
 
-# Основной цикл
+# 🔐 Проверка Auth-сервера
 
-def monitor():
+def monitor_auth():
     global last_auth_status
     last_auth_status = None
-    last_realm_statuses = {}
-
-    print("🚀 Мониторинг запущен...")
 
     while True:
-        update_new_users()
-
-        # 🔐 Проверка Auth-сервера
         auth_is_up = check_tcp_port(HOST, PORT)
         auth_status = "UP" if auth_is_up else "DOWN"
         log_status(auth_status)
+
         if last_auth_status is not None and auth_status != last_auth_status:
             send_telegram_message_to_all(check_server_status_text())
             send_discord_message(auth_status)
-        last_auth_status = auth_status
 
-        # 🌐 Проверка реалмов
+        last_auth_status = auth_status
+        time.sleep(CHECK_INTERVAL)
+
+# 🌐 Проверка реалмов
+
+def monitor_realms():
+    last_realm_statuses = {}
+
+    while True:
         for realm in REALMS:
             is_up = check_tcp_port(realm["host"], realm["port"])
             status = "UP" if is_up else "DOWN"
             name = realm["name"]
             timestamp = datetime.now().strftime("[%Y-%m-%d %H:%M:%S]")
             icon = "🟢" if status == "UP" else "🔴"
-            msg = f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Realm {realm['name']} status: {icon} {status}"
+            msg = f"{timestamp} Realm {name} status: {icon} {status}"
             print(msg)
 
-            redis_key = f"logs:{realm['name'].replace(' ', '_')}"
+            redis_key = f"logs:{name.replace(' ', '_')}"
             try:
                 r.lpush(redis_key, msg)
                 r.ltrim(redis_key, 0, 499)
             except Exception as e:
-                print(f"⚠️ Redis error for realm {realm['name']}: {e}")
+                print(f"⚠️ Redis error for realm {name}: {e}")
 
-            # Отправка алертов только при смене статуса
-            last = last_realm_statuses.get(realm["name"])
+            last = last_realm_statuses.get(name)
             if last is not None and last != status:
                 send_telegram_message_to_all(msg)
-                send_discord_message(auth_status)
                 send_discord_message(f"Realm {name} status changed: {icon} {status}")
-            last_realm_statuses[realm["name"]] = status
+            last_realm_statuses[name] = status
 
         time.sleep(CHECK_INTERVAL)
 
+
+def telegram_listener_loop():
+    while True:
+        update_new_users()
+        time.sleep(3)
+
 # Запуск
 if __name__ == "__main__":
-    monitor()
+    print("🚀 Запуск мониторинга...")
+
+    threading.Thread(target=monitor_auth, daemon=True).start()
+    threading.Thread(target=monitor_realms, daemon=True).start()
+    threading.Thread(target=telegram_listener_loop, daemon=True).start()
+
+    # Блокируем основной поток, чтобы скрипт не завершился
+    while True:
+        time.sleep(3600)
