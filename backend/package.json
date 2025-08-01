@@ -1,7 +1,7 @@
 {
   "scripts": {
     "start": "node server.js",
-    "ws": "node ws-server.ts"
+    "ws": "node ws-server.js"
   },
   "type": "module",
   "dependencies": {
