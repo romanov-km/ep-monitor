@@ -11,6 +11,12 @@ export const translations = {
       noData: "Нет данных для графика",
       support: "Нравится проект? ",
       donateLink: "Поддержать на Donation Alerts",
+      authUp: "✅  Cервер авторизации работает",
+      authDown: "🚨  Сервер авторизации не работает",
+      chatUp: "✅  Чат сервер работает",
+      chatDown: "🚨  Чат сервер не работает",
+      debug: "Отладка",
+      notifications: "Уведомления",
     },
     en: {
       title: "📡 WoW-server Project Epoch",
@@ -24,6 +30,12 @@ export const translations = {
       noData: "No data for chart",
       support: "Like the project? ",
       donateLink: "Support via Donation Alerts",
+      authUp: "✅  Auth server is UP",
+      authDown: "🚨  Auth server is DOWN",
+      chatUp: "✅  Chat server is UP",
+      chatDown: "🚨  Chat server is DOWN",
+      debug: "Debug",
+      notifications: "Notifications",
     },
   };
   

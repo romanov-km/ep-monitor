@@ -13,6 +13,7 @@ import { RealmStatusList } from "../components/RealmStatusList";
 import { realmStore } from "../stores/realmStore";
 import { autorun } from "mobx";
 import RealmChat from "../components/chat/RealmChat";
+import { parseStatus } from "../utils/parseStatus";
 
 interface StatusEntry {
   time: string;
@@ -20,13 +21,6 @@ interface StatusEntry {
 }
 
 const API_BASE = import.meta.env.VITE_API_BASE;
-
-// Унифицированная функция для определения, что сервер работает
-function parseStatus(entry: { status: string }) {
-  return (
-    entry.status.toUpperCase().includes("UP") || entry.status.includes("🟢")
-  );
-}
 
 function App() {
   const [statuses, setStatuses] = useState<StatusEntry[]>([]);
@@ -52,6 +46,7 @@ function App() {
   );
 
   const [showTelegram, setShowTelegram] = useState(false);
+  const prevStatusesRef = useRef<Record<string, boolean>>({});
 
   const handleUsernameSubmit = (name: string) => {
     localStorage.setItem("username", name);
@@ -84,23 +79,23 @@ function App() {
     if (alertEnabled) playSound();
   };
 
-  const prevStatusRef = useRef<boolean | null>(null);
-
   useEffect(() => {
+  
     const dispose = autorun(() => {
-      const latest = realmStore.realms[0];
-      if (!latest) return;
-
-      const current = parseStatus(latest);
-      const prev = prevStatusRef.current;
-
-      if (prev === false && current === true && alertEnabled) {
-        playSound();
-      }
-
-      prevStatusRef.current = current;
+      realmStore.realms.forEach((realm) => {
+        const isUp = parseStatus(realm); // true или false
+        const prev = prevStatusesRef.current[realm.name];
+  
+        // Если сервер поднялся
+        if (prev === false && isUp && alertEnabled) {
+          playSound();
+        }
+  
+        // Сохраняем текущее состояние
+        prevStatusesRef.current[realm.name] = isUp;
+      });
     });
-
+  
     return () => dispose();
   }, [alertEnabled]);
 
@@ -178,14 +173,14 @@ function App() {
         {language === "ru" ? (
           <>
             {isAuthUp
-              ? "✅ Сервер авторизации работает."
-              : "🚨 Сервер авторизации недоступен."}{" "}
-            Уведомления: {alertEnabled ? "ВКЛ 🔔" : "ВЫКЛ 🔕"}
+              ? t.authUp
+              : t.authDown}{" "}
+            {t.notifications}: {alertEnabled ? "ВКЛ 🔔" : "ВЫКЛ 🔕"}
           </>
         ) : (
           <>
-            {isAuthUp ? "✅ Authserver is UP." : "🚨 Authserver is DOWN."}{" "}
-            Notifications: {alertEnabled ? "ON 🔔" : "OFF 🔕"}
+            {isAuthUp ? t.authUp : t.authDown}{" "}
+            {t.notifications}: {alertEnabled ? "ON 🔔" : "OFF 🔕"}
           </>
         )}
       </div>
