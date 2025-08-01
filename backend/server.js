@@ -33,13 +33,22 @@ app.get("/api/status", async (req, res) => {
     const lines = await redis.lRange("logs", -1000, -1);
     const parsed = lines
       .reverse()
-      .map(line => {
-        const [time, ...rest] = line.split(" ");
+      .map((line) => {
+        const match = line.match(/^\[(.*?)\] (.*)$/);
+        if (!match) return null;
+
+        const rawTime = match[1]; // "2025-08-01 12:34:56"
+        const statusText = match[2];
+
+        // Преобразуем в ISO строку (UTC)
+        const timestamp = new Date(rawTime.replace(" ", "T") + "Z");
+
         return {
-          time: time.replace("[", "").replace("]", ""),
-          status: rest.join(" ")
+          time: timestamp.toISOString(),
+          status: statusText,
         };
-      });
+      })
+      .filter(Boolean);
     res.json(parsed);
   } catch (e) {
     res.status(500).json({ error: "Can't read logs from Redis." });
@@ -62,10 +71,10 @@ app.get("/api/chart-data", async (req, res) => {
     const parsed = rawLogs.map(line => {
       const match = line.match(/^\[(.*?)\] Authserver status: (🟢|🔴) (UP|DOWN)/);
       if (!match) return null;
-
-      const timestamp = new Date(match[1]);
+    
+      const timestamp = new Date(match[1].replace(" ", "T") + "Z");
       return {
-        hour: timestamp.toISOString().slice(0, 13), // YYYY-MM-DDTHH
+        hour: timestamp.toISOString().slice(0, 13), // YYYY-MM-DDTHH (UTC)
         status: match[3],
       };
     }).filter(Boolean);
@@ -92,6 +101,32 @@ app.get("/api/chart-data", async (req, res) => {
   }
 });
 
+app.get("/api/chart-events", async (req, res) => {
+  try {
+    const rawLogs = await redis.lRange("logs", -1000, -1);
+
+    const parsed = rawLogs.map((line) => {
+      const match = line.match(/^\[(.*?)\] Authserver status: (🟢|🔴) (UP|DOWN)/);
+      if (!match) return null;
+    
+      // ВАЖНО! Явно указываем, что это UTC
+      const timestamp = new Date(match[1].replace(" ", "T") + "Z");
+      const statusValue = match[3] === "UP" ? 1 : 0;
+    
+      return {
+        time: timestamp.toISOString(), // оставляем ISO формат
+        statusValue,
+      };
+    }).filter(Boolean);
+
+    res.json(parsed.reverse());
+  } catch (e) {
+    console.error("chart-events error:", e);
+    res.status(500).json({ error: "Failed to get event chart" });
+  }
+});
+
+
 app.get("/api/realm-chart", async (req, res) => {
   try {
     const realms = ["Kezan_PVE", "Gurubashi_PVP"];
@@ -104,7 +139,7 @@ app.get("/api/realm-chart", async (req, res) => {
         const match = line.match(/^\[(.*?)\] Realm (.*) status: (🟢|🔴) (UP|DOWN)/);
         if (!match) return null;
 
-        const timestamp = new Date(match[1]);
+        const timestamp = new Date(match[1].replace(" ", "T") + "Z");
         return {
           hour: timestamp.toISOString().slice(0, 13), // YYYY-MM-DDTHH
           status: match[4], // UP or DOWN
@@ -151,11 +186,13 @@ app.get("/api/realm-status", async (req, res) => {
       const match = line.match(/^\[(.*?)\] Realm (.*) status: (🟢|🔴) (UP|DOWN)/);
       if (!match) continue;
 
-      const [, time, name, icon, status] = match;
+      const [, rawTime, name, icon, status] = match;
+
+      const timestamp = new Date(rawTime.replace(" ", "T") + "Z");
 
       statuses.push({
         name,
-        time,
+        time: timestamp.toISOString(),
         icon,
         status,
       });
