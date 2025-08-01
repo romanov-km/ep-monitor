@@ -36,9 +36,9 @@ function App() {
   const [language, setLanguage] = useState<"ru" | "en">("en");
   const t = translations[language];
 
-  const [alertEnabled, setAlertEnabled] = useState(true);
+  const [alertEnabled, setAlertEnabled] = useState(false);
   const [volume, setVolume] = useState(1);
-  const [soundType, setSoundType] = useState("BG");
+  const [soundType, setSoundType] = useState("70elite");
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
@@ -150,7 +150,6 @@ function App() {
     fetchChartData();
   }, []);
 
-  //const latestStatusEntry = statuses[0];
   const latestStatusEntry = realmStore.realms[0];
   const isServerUp = latestStatusEntry ? parseStatus(latestStatusEntry) : false;
   
@@ -189,7 +188,6 @@ function App() {
       <Footer t={t} />
 
       <SpeedInsights />
-
       <Analytics />
     </div>
   );

@@ -6,7 +6,7 @@ export const RealmStatusList: React.FC = observer(() => {
 
   useEffect(() => {
     realmStore.fetchRealms();
-    const interval = setInterval(() => {realmStore.fetchRealms()}, 600000);
+    const interval = setInterval(() => {realmStore.fetchRealms()}, 60000);
     return () => clearInterval(interval);
   }, []);
 
