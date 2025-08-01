@@ -1,7 +1,9 @@
-const express = require("express");
-const cors = require("cors");
-const { createClient } = require("redis");
-require("dotenv").config();
+import express from "express";
+import cors from "cors";
+import { createClient } from "redis";
+import dotenv from "dotenv";
+
+dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 3001;
