@@ -10,6 +10,8 @@ import Footer from "./components/Footer";
 import { Analytics } from "@vercel/analytics/react";
 import { SpeedInsights } from "@vercel/speed-insights/react";
 import { RealmStatusList } from "./components/RealmStatusList";
+import { realmStore } from "./stores/realmStore";
+import { autorun } from "mobx";
 
 interface StatusEntry {
   time: string;
@@ -19,7 +21,7 @@ interface StatusEntry {
 const API_BASE = import.meta.env.VITE_API_BASE;
 
 // Унифицированная функция для определения, что сервер работает
-function parseStatus(entry: StatusEntry): boolean {
+function parseStatus(entry: { status: string }) {
   return (
     entry.status.toUpperCase().includes("UP") || entry.status.includes("🟢")
   );
@@ -69,18 +71,22 @@ function App() {
   const prevStatusRef = useRef<boolean | null>(null);
 
   useEffect(() => {
-    const latest = statuses[0];
-    if (!latest) return;
-
-    const current = parseStatus(latest);
-    const prev = prevStatusRef.current;
-
-    if (prev === false && current === true && alertEnabled) {
-      playSound();
-    }
-
-    prevStatusRef.current = current;
-  }, [statuses, alertEnabled]);
+    const dispose = autorun(() => {
+      const latest = realmStore.realms[0];
+      if (!latest) return;
+  
+      const current = parseStatus(latest);
+      const prev = prevStatusRef.current;
+  
+      if (prev === false && current === true && alertEnabled) {
+        playSound();
+      }
+  
+      prevStatusRef.current = current;
+    });
+  
+    return () => dispose();
+  }, [alertEnabled]);
 
   const fetchStatuses = async () => {
     try {
@@ -144,8 +150,10 @@ function App() {
     fetchChartData();
   }, []);
 
-  const latestStatusEntry = statuses[0];
+  //const latestStatusEntry = statuses[0];
+  const latestStatusEntry = realmStore.realms[0];
   const isServerUp = latestStatusEntry ? parseStatus(latestStatusEntry) : false;
+  
 
   return (
     <div className="p-4 font-mono">

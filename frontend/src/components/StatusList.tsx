@@ -29,7 +29,7 @@ const StatusList: React.FC<StatusListProps> = ({ statuses }) => {
   return (
     <ul className="space-y-1 max-h-40 overflow-auto pr-2" id="status-list">
       {statuses
-        .slice(-200)
+        .slice(-1000)
         .map((entry, i) => {
           const localTime = getLocalDateTime(entry);
           const cleanStatus = entry.status.replace(/^\d{2}:\d{2}:\d{2}\]?\s?/, "");
