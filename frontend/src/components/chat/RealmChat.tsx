@@ -21,7 +21,10 @@ const RealmChat: React.FC<RealmChatProps> = observer(
     };
 
     useEffect(() => {
-      scrollRef.current?.scrollIntoView({ behavior: "smooth" });
+      const container = scrollRef.current?.parentElement;
+        if (container) {
+          container.scrollTop = container.scrollHeight;
+      }
     }, [messages]);
 
     const handleSend = () => {
