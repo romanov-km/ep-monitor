@@ -1,4 +1,4 @@
-import { WebSocketServer } from 'ws';
+const { WebSocketServer } = require('ws');
 import { createServer } from 'http';
 import redis from 'redis';
 import dotenv from 'dotenv';
