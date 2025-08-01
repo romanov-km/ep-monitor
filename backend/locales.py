@@ -7,9 +7,11 @@ translations = {
         "unsubscribe_btn": "❌ Отписаться",
         "unsubscribed": "❌ Вы отписались от уведомлений.",
         "subscribed": "✅ Вы подписаны на уведомления.",
+        "status_info": "📊 Сервер проверяется каждые {interval} сек.",
         "choose_lang": "🌐 Выберите язык:",
         "check_interval": "📊 Сервер проверяется каждые {interval} сек.",
         "lang_changed": "✅ Язык изменён на русский.",
+        "realms_btn": "🌍 Реалмы",
     },
     "en": {
         "greeting": "👋 Hello! I’m watching the WoW server.",
@@ -19,8 +21,10 @@ translations = {
         "unsubscribe_btn": "❌ Unsubscribe",
         "unsubscribed": "❌ You have unsubscribed from notifications.",
         "subscribed": "✅ You are now subscribed to notifications.",
+        "status_info": "📊 Server is checked every {interval} sec.",
         "choose_lang": "🌐 Choose your language:",
         "check_interval": "📊 The server is checked every {interval} sec.",
         "lang_changed": "✅ Language changed to English.",
+        "realms_btn": "🌍 Realms",
     }
 }

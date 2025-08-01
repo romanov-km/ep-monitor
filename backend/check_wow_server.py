@@ -76,6 +76,7 @@ def send_telegram_message(chat_id, message):
             [{"text": t("status_btn", lang), "callback_data": "status"}],
             [{"text": t("project_btn", lang), "url": "https://project-epoch.net"}],
             [{"text": t("unsubscribe_btn", lang), "callback_data": "unsubscribe"}],
+            [{"text": t("realms_btn", lang), "callback_data": "realms"}],
             [
                 {"text": "🇷🇺 Русский", "callback_data": "lang_ru"},
                 {"text": "🇺🇸 English", "callback_data": "lang_en"}
@@ -116,12 +117,16 @@ def update_new_users():
                     lang = get_user_lang(chat_id)
                     if text == "/start":
                         save_user(chat_id)
+                        lang = get_user_lang(chat_id)
                         send_telegram_message(chat_id, t("start", lang))
                     elif text == "/stop":
                         remove_user(chat_id)
                         send_telegram_message(chat_id, t("unsubscribed", lang))
                     elif text == "/status":
-                        send_telegram_message(chat_id, check_server_status_text())
+                        lang = get_user_lang(chat_id)
+                        send_telegram_message(chat_id, t("status_info", lang, interval=CHECK_INTERVAL))
+                    elif text == "/realms":
+                        send_telegram_message(chat_id, get_realms_status_text())
 
                 if "callback_query" in result:
                     q = result["callback_query"]
@@ -138,6 +143,8 @@ def update_new_users():
                     elif data.startswith("lang_"):
                         set_user_lang(chat_id, data.split("_")[1])
                         send_telegram_message(chat_id, t("language_set", get_user_lang(chat_id)))
+                    elif data == "realms":
+                        send_telegram_message(chat_id, get_realms_status_text())
                     requests.post(f"https://api.telegram.org/bot{BOT_TOKEN}/answerCallbackQuery",
                                   json={"callback_query_id": q["id"]})
     except Exception as e:
@@ -166,6 +173,15 @@ def check_server_status_text():
     is_up = check_tcp_port(HOST, PORT)
     icon = "🟢" if is_up else "🔴"
     return f"{datetime.now().strftime('%H:%M:%S')} Сервер: {HOST}:{PORT} {icon} {'UP' if is_up else 'DOWN'}"
+
+def get_realms_status_text():
+    lines = []
+    for realm in REALMS:
+        is_up = check_tcp_port(realm["host"], realm["port"])
+        icon = "🟢" if is_up else "🔴"
+        status = "UP" if is_up else "DOWN"
+        lines.append(f"{realm['name']}: {icon} {status}")
+    return "\n".join(lines)
 
 def log_status(status):
     timestamp = datetime.now().strftime("[%Y-%m-%d %H:%M:%S]")
