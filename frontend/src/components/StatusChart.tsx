@@ -42,10 +42,9 @@ const CustomTooltip = ({ active, payload }: any) => {
   return null;
 };
 
-
 const StatusChart: React.FC<StatusChartProps> = ({ chartData }) => {
   return (
-    <div className="mb-6 h-24">
+    <div className="mb-6 h-22">
       {chartData.length === 0 ? (
         <p className="text-gray-500">Нет данных для графика</p>
       ) : (
@@ -56,14 +55,24 @@ const StatusChart: React.FC<StatusChartProps> = ({ chartData }) => {
               tick={{ fontSize: 10 }}
               interval="preserveStartEnd"
               minTickGap={50}
-              tickFormatter={(str) => {
-                const [date, time] = str.split(" ");
-                return `${time}\n${date}`;
+              tickFormatter={(isoString) => {
+                const date = new Date(isoString);
+                return (
+                  date.toLocaleDateString(undefined, {
+                    day: "2-digit",
+                    month: "2-digit",
+                  })+ "\n" +
+                  date.toLocaleTimeString(undefined, {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                    hour12: false,
+                  })
+                );
               }}
             />
             <YAxis
               label={{
-                value: "Status",
+                value: "",
                 angle: -90,
                 position: "insideLeft",
                 offset: 10,
