@@ -1,13 +1,15 @@
 {
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "ws": "node ws-server.js"
   },
   "dependencies": {
     "concurrently": "^9.2.0",
     "cors": "^2.8.5",
     "dotenv": "^17.2.1",
     "express": "^5.1.0",
-    "redis": "^5.6.1"
+    "redis": "^5.6.1",
+    "ws": "^8.18.3"
   },
   "devDependencies": {
     "dotenv-cli": "^10.0.0"
