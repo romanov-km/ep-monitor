@@ -32,6 +32,21 @@ REALMS = [
 ]
 
 # Telegram
+
+from locales import translations
+
+def t(key, lang="ru", **kwargs):
+    value = translations.get(lang, {}).get(key, key)
+    if isinstance(value, str):
+        return value.format(**kwargs)
+    return value
+
+def get_user_lang(chat_id):
+    return r.get(f"lang:{chat_id}").decode("utf-8") if r.exists(f"lang:{chat_id}") else "ru"
+
+def set_user_lang(chat_id, lang):
+    r.set(f"lang:{chat_id}", lang)
+
 def load_users():
     try:
         return set(map(int, r.smembers("users")))
@@ -45,16 +60,25 @@ def save_user(chat_id):
     except Exception as e:
         print(f"⚠️ Redis error while saving user: {e}")
 
+def remove_user(chat_id):
+    try:
+        r.srem("users", chat_id)
+    except Exception as e:
+        print(f"⚠️ Redis error while removing user: {e}")
+
 def send_telegram_message(chat_id, message):
+    lang = get_user_lang(chat_id)
     url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
     payload = {
         "chat_id": chat_id,
         "text": message,
         "reply_markup": {
             "inline_keyboard": [
-                [{"text": "🔁 Проверить", "callback_data": "check"}],
-                [{"text": "📊 Состояние", "callback_data": "status"}],
-                [{"text": "ℹ️ О проекте", "url": "https://project-epoch.net"}]
+                [{"text": t("check_btn", lang), "callback_data": "check"}],
+                [{"text": t("status_btn", lang), "callback_data": "status"}],
+                [{"text": t("project_btn", lang), "url": "https://project-epoch.net"}],
+                [{"text": t("unsubscribe_btn", lang), "callback_data": "unsubscribe"}],
+                [{"text": "🇷🇺 Русский", "callback_data": "lang_ru"}, {"text": "🇺🇸 English", "callback_data": "lang_en"}]
             ]
         }
     }
@@ -81,25 +105,37 @@ def update_new_users():
                 if "message" in result:
                     msg = result["message"]
                     chat_id = msg["chat"]["id"]
-                    save_user(chat_id)
-
-                    if msg.get("text") == "/start":
-                        send_telegram_message(chat_id, "👋 Привет! Я слежу за WoW-сервером.")
-                    elif msg.get("text") == "/status":
+                    text = msg.get("text", "")
+                    lang = get_user_lang(chat_id)
+                    if text == "/start":
+                        save_user(chat_id)
+                        send_telegram_message(chat_id, t("start", lang))
+                    elif text == "/stop":
+                        remove_user(chat_id)
+                        send_telegram_message(chat_id, t("unsubscribed", lang))
+                    elif text == "/status":
                         send_telegram_message(chat_id, check_server_status_text())
 
                 if "callback_query" in result:
                     q = result["callback_query"]
                     chat_id = q["from"]["id"]
                     data = q["data"]
+                    lang = get_user_lang(chat_id)
                     if data == "check":
                         send_telegram_message(chat_id, check_server_status_text())
                     elif data == "status":
-                        send_telegram_message(chat_id, f"📊 Сервер проверяется каждые {CHECK_INTERVAL} сек.")
+                        send_telegram_message(chat_id, t("status_info", lang, interval=CHECK_INTERVAL))
+                    elif data == "unsubscribe":
+                        remove_user(chat_id)
+                        send_telegram_message(chat_id, t("unsubscribed", lang))
+                    elif data.startswith("lang_"):
+                        set_user_lang(chat_id, data.split("_")[1])
+                        send_telegram_message(chat_id, t("language_set", get_user_lang(chat_id)))
                     requests.post(f"https://api.telegram.org/bot{BOT_TOKEN}/answerCallbackQuery",
                                   json={"callback_query_id": q["id"]})
     except Exception as e:
         print(f"⚠️ Failed to get updates: {e}")
+
 
 # Discord
 def send_discord_message(message):
