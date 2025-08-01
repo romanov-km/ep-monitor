@@ -1,26 +1,26 @@
 translations = {
-    "en": {
-        "start": "👋 Hello! I'm monitoring the WoW server.",
-        "status": "📊 Server is checked every {interval} sec.",
-        "unsub": "❌ You have unsubscribed from notifications.",
-        "resub": "✅ You are now subscribed again.",
-        "buttons": {
-            "check": "🔁 Check",
-            "status": "📊 Status",
-            "about": "ℹ️ About",
-            "unsub": "❌ Unsubscribe"
-        }
-    },
     "ru": {
-        "start": "👋 Привет! Я слежу за WoW-сервером.",
-        "status": "📊 Сервер проверяется каждые {interval} сек.",
-        "unsub": "❌ Вы отписались от уведомлений.",
-        "resub": "✅ Вы снова подписаны.",
-        "buttons": {
-            "check": "🔁 Проверить",
-            "status": "📊 Состояние",
-            "about": "ℹ️ О проекте",
-            "unsub": "❌ Отписаться"
-        }
+        "greeting": "👋 Привет! Я слежу за WoW-сервером.",
+        "check_btn": "🔁 Проверить",
+        "status_btn": "📊 Состояние",
+        "project_btn": "ℹ️ О проекте",
+        "unsubscribe_btn": "❌ Отписаться",
+        "unsubscribed": "❌ Вы отписались от уведомлений.",
+        "subscribed": "✅ Вы подписаны на уведомления.",
+        "choose_lang": "🌐 Выберите язык:",
+        "check_interval": "📊 Сервер проверяется каждые {interval} сек.",
+        "lang_changed": "✅ Язык изменён на русский.",
+    },
+    "en": {
+        "greeting": "👋 Hello! I’m watching the WoW server.",
+        "check_btn": "🔁 Check",
+        "status_btn": "📊 Status",
+        "project_btn": "ℹ️ About project",
+        "unsubscribe_btn": "❌ Unsubscribe",
+        "unsubscribed": "❌ You have unsubscribed from notifications.",
+        "subscribed": "✅ You are now subscribed to notifications.",
+        "choose_lang": "🌐 Choose your language:",
+        "check_interval": "📊 The server is checked every {interval} sec.",
+        "lang_changed": "✅ Language changed to English.",
     }
 }

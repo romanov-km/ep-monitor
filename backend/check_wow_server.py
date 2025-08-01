@@ -67,21 +67,28 @@ def remove_user(chat_id):
         print(f"⚠️ Redis error while removing user: {e}")
 
 def send_telegram_message(chat_id, message):
-    lang = get_user_lang(chat_id)
+    lang = get_user_lang(chat_id)  # Получаем язык пользователя
     url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
+
+    keyboard = {
+        "inline_keyboard": [
+            [{"text": t("check_btn", lang), "callback_data": "check"}],
+            [{"text": t("status_btn", lang), "callback_data": "status"}],
+            [{"text": t("project_btn", lang), "url": "https://project-epoch.net"}],
+            [{"text": t("unsubscribe_btn", lang), "callback_data": "unsubscribe"}],
+            [
+                {"text": "🇷🇺 Русский", "callback_data": "lang_ru"},
+                {"text": "🇺🇸 English", "callback_data": "lang_en"}
+            ]
+        ]
+    }
+
     payload = {
         "chat_id": chat_id,
         "text": message,
-        "reply_markup": {
-            "inline_keyboard": [
-                [{"text": t("check_btn", lang), "callback_data": "check"}],
-                [{"text": t("status_btn", lang), "callback_data": "status"}],
-                [{"text": t("project_btn", lang), "url": "https://project-epoch.net"}],
-                [{"text": t("unsubscribe_btn", lang), "callback_data": "unsubscribe"}],
-                [{"text": "🇷🇺 Русский", "callback_data": "lang_ru"}, {"text": "🇺🇸 English", "callback_data": "lang_en"}]
-            ]
-        }
+        "reply_markup": keyboard
     }
+
     try:
         resp = requests.post(url, json=payload, timeout=5)
         if resp.status_code != 200:
