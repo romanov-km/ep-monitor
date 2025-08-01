@@ -21,9 +21,8 @@ export const RealmStatusList: React.FC = observer(() => {
     <div className="flex p-4 px-2 justify-center">
       <div className="flex space-x-4 overflow-x-auto">
         {realmStore.realms.map((realm, idx) => {
-          // Преобразуем строку "2025-07-31 13:30:47" → "2025-07-31T13:30:47Z"
-          const utcDateStr = realm.time.replace(" ", "T") + "Z";
-          const date = new Date(utcDateStr);
+          
+          const date = new Date(realm.time);
           const isValidDate = !isNaN(date.getTime());
 
           return (
@@ -49,13 +48,13 @@ export const RealmStatusList: React.FC = observer(() => {
                 <div className="flex justify-between text-xs text-gray-400 ">
                   Last check:
                   <time>
-                    {date.toLocaleString("ru-RU", {
-                      year: "numeric",
-                      month: "2-digit",
+                    {date.toLocaleString(undefined, {
                       day: "2-digit",
+                      month: "2-digit",
                       hour: "2-digit",
                       minute: "2-digit",
                       second: "2-digit",
+                      hour12: false,
                     })}
                   </time>
                 </div>

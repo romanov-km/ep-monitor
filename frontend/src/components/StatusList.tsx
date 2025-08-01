@@ -10,19 +10,21 @@ interface StatusListProps {
 }
 
 const getLocalDateTime = (entry: StatusEntry) => {
-  const rawTime = entry.status.slice(0, 8); // пример: "07:12:45"
-  const utcString = `${entry.time}T${rawTime}Z`; // "2025-07-30T07:12:45Z"
-  const localDate = new Date(utcString);
+  
+  const getLocalDateTime = (entry: StatusEntry) => {
+    const date = new Date(entry.time);
+    return date.toLocaleString(undefined, {
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+      hour12: false,
+    });
+  };
 
-  return localDate.toLocaleString(undefined, {
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-    hour12: false,
-  });
+  return getLocalDateTime(entry);
 };
 
 const StatusList: React.FC<StatusListProps> = ({ statuses }) => {

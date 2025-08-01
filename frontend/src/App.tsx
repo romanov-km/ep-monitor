@@ -119,24 +119,11 @@ function App() {
   useEffect(() => {
     const fetchChartData = async () => {
       try {
-        const res = await axios.get(`${API_BASE}/api/chart-data`);
-
-        const toLocalHour = (utcString: string) => {
-          // utcString = "2025-07-30 14"
-          const [date, hour] = utcString.split(" ");
-          const iso = `${date}T${hour.padStart(2, "0")}:00:00Z`; // ISO строка
-          const local = new Date(iso);
-
-          const month = String(local.getMonth() + 1).padStart(2, "0");
-          const day = String(local.getDate()).padStart(2, "0");
-          const hourLocal = String(local.getHours()).padStart(2, "0");
-
-          return `${month}-${day} ${hourLocal}:00`;
-        };
+        const res = await axios.get(`${API_BASE}/api/chart-events`);
 
         const transformed = res.data.map(
           (point: { time: string; statusValue: number }) => ({
-            time: toLocalHour(point.time),
+            time: (point.time),
             statusValue: point.statusValue,
           })
         );

@@ -17,18 +17,31 @@ interface StatusChartProps {
   chartData: ChartPoint[];
 }
 
-const CustomTooltip = ({ active, payload, label }: any) => {
+const CustomTooltip = ({ active, payload }: any) => {
   if (active && payload && payload.length) {
-    const status = payload[0].value === 1 ? "🟢 UP" : "🔴 DOWN";
+    const { time, statusValue } = payload[0].payload;
+    const status = statusValue === 1 ? "🟢 UP" : "🔴 DOWN";
+
+    const date = new Date(time); // ISO формат → корректный парсинг
+    const localTime = date.toLocaleString(undefined, {
+      hour: "2-digit",
+      minute: "2-digit",
+      day: "2-digit",
+      month: "2-digit",
+      timeZoneName: "short",
+      hour12: false,
+    });
+
     return (
       <div className="bg-white p-2 text-sm text-black rounded shadow">
-        <p>⏰ {label}</p>
+        <p>⏰ {localTime}</p>
         <p>{status}</p>
       </div>
     );
   }
   return null;
 };
+
 
 const StatusChart: React.FC<StatusChartProps> = ({ chartData }) => {
   return (
