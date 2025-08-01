@@ -3,6 +3,7 @@
     "start": "node server.js",
     "ws": "node ws-server.js"
   },
+  "type": "module",
   "dependencies": {
     "concurrently": "^9.2.0",
     "cors": "^2.8.5",

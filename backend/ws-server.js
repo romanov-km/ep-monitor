@@ -1,7 +1,8 @@
-const { WebSocketServer } = require('ws');
-const { createServer } = require('http');
-const redis = require('redis');
-const dotenv = require('dotenv');
+import { WebSocketServer } from "ws";
+import { createServer } from "http";
+import redis from "redis";
+import dotenv from "dotenv";
+
 
 dotenv.config();
 
