@@ -12,9 +12,9 @@ interface RealmChatProps {
 const RealmChat: React.FC<RealmChatProps> = observer(
   ({ realm, username, onUsernameSubmit }) => {
     const scrollRef = useRef<HTMLDivElement>(null);
-    const { messages, sendMessage } = useRealmChatSocket(realm, username);
     const [text, setText] = useState("");
     const [showModal, setShowModal] = useState(false);
+    const { messages, sendMessage, userCount } = useRealmChatSocket(realm, username);
 
     const handleFocus = () => {
       if (!username) setShowModal(true);
@@ -34,7 +34,9 @@ const RealmChat: React.FC<RealmChatProps> = observer(
     return (
       <div className="p-4 bg-gray-900 border border-gray-700 rounded-lg w-full  mx-auto mt-4 mb-4">
         <h2 className="text-lg font-bold text-white mb-2">Chat:</h2>
-
+        <div className="text-sm text-gray-500 mb-2">
+          👥 In chat: {userCount}
+        </div>
         <div className="bg-black p-2 h-60 overflow-y-auto rounded border border-gray-600">
           {messages.map((msg, idx) => {
             const isOwnMessage = msg.user === username;
