@@ -201,7 +201,7 @@ function App() {
           onClick={() => setShowTelegram((prev) => !prev)}
           className="text-sm bg-blue-700 hover:bg-blue-800 text-white px-3 py-1 rounded"
         >
-          {showTelegram ? t.telegramHeader : t.showGame}
+          {showTelegram ? t.tgHide : t.tgShow}
         </button>
 
         {showGame && (
