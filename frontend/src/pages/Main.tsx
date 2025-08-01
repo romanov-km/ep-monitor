@@ -14,6 +14,7 @@ import { realmStore } from "../stores/realmStore";
 import { autorun } from "mobx";
 import RealmChat from "../components/chat/RealmChat";
 import { parseStatus } from "../utils/parseStatus";
+import IdleGame from "../components/game/IdleGame";
 
 interface StatusEntry {
   time: string;
@@ -48,6 +49,13 @@ function App() {
   const [showTelegram, setShowTelegram] = useState(false);
   const prevStatusesRef = useRef<Record<string, boolean>>({});
 
+  const [showGame, setShowGame] = useState(false);
+  const [miniGameStats, setMiniGameStats] = useState({
+    level: 1,
+    gold: 0,
+    dps: 0,
+  });
+
   const handleUsernameSubmit = (name: string) => {
     localStorage.setItem("username", name);
     setUsername(name);
@@ -80,22 +88,21 @@ function App() {
   };
 
   useEffect(() => {
-  
     const dispose = autorun(() => {
       realmStore.realms.forEach((realm) => {
         const isUp = parseStatus(realm); // true или false
         const prev = prevStatusesRef.current[realm.name];
-  
+
         // Если сервер поднялся
         if (prev === false && isUp && alertEnabled) {
           playSound();
         }
-  
+
         // Сохраняем текущее состояние
         prevStatusesRef.current[realm.name] = isUp;
       });
     });
-  
+
     return () => dispose();
   }, [alertEnabled]);
 
@@ -172,15 +179,13 @@ function App() {
       >
         {language === "ru" ? (
           <>
-            {isAuthUp
-              ? t.authUp
-              : t.authDown}{" "}
-            {t.notifications}: {alertEnabled ? "ВКЛ 🔔" : "ВЫКЛ 🔕"}
+            {isAuthUp ? t.authUp : t.authDown} {t.notifications}:{" "}
+            {alertEnabled ? "ВКЛ 🔔" : "ВЫКЛ 🔕"}
           </>
         ) : (
           <>
-            {isAuthUp ? t.authUp : t.authDown}{" "}
-            {t.notifications}: {alertEnabled ? "ON 🔔" : "OFF 🔕"}
+            {isAuthUp ? t.authUp : t.authDown} {t.notifications}:{" "}
+            {alertEnabled ? "ON 🔔" : "OFF 🔕"}
           </>
         )}
       </div>
@@ -189,15 +194,31 @@ function App() {
 
       <LanguageSwitcher language={language} setLanguage={setLanguage} />
 
-      <div className="my-2">
+      {showTelegram && <TelegramBlock t={t} language={language} />}
+
+      <div className="my-2 flex gap-2 flex-wrap">
         <button
           onClick={() => setShowTelegram((prev) => !prev)}
           className="text-sm bg-blue-700 hover:bg-blue-800 text-white px-3 py-1 rounded"
         >
-          {showTelegram ? "Hide Telegram-bot" : "Show Telegram-bot"}
+          {showTelegram ? t.telegramHeader : t.showGame}
+        </button>
+
+        {showGame && (
+          <div className="fixed bottom-4 right-4 w-[340px] h-[680px] z-50 bg-gray-800 rounded shadow-lg overflow-hidden border border-gray-700">
+            <IdleGame onStatsUpdate={setMiniGameStats} language={language} onClose={() => setShowGame(false)}/>
+          </div>
+        )}
+
+        <button
+          onClick={() => setShowGame((prev) => !prev)}
+          className="text-sm bg-purple-700 hover:bg-purple-800 text-white px-3 py-1 rounded"
+        >
+          {showGame
+            ? `${t.hideGame} — 🐉 ${miniGameStats.level} | 💰 ${miniGameStats.gold} | ⚔️ ${miniGameStats.dps}`
+            : `${t.game} — 🐉 ${miniGameStats.level} | 💰 ${miniGameStats.gold} | ⚔️ ${miniGameStats.dps}`}
         </button>
       </div>
-      {showTelegram && <TelegramBlock t={t} language={language} />}
 
       <RealmStatusList />
       <RealmChat
