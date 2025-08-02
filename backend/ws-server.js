@@ -33,7 +33,7 @@ wss.on('connection', (ws) => {
         const username = data.username;
         ws.realm = realm;
         ws.username = username;
-        usernames.set(ws, username);
+        
 
         // Проверка на дублирующийся ник
         const existingUsers = [...usernames.values()];
