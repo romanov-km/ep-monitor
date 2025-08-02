@@ -30,8 +30,9 @@ wss.on('connection', (ws) => {
 
       if (data.type === 'subscribe') {
         const realm = data.realm;
+        const username = data.username;
         ws.realm = realm;
-        const username = data.user;
+        ws.username = username;
         usernames.set(ws, username);
 
         // Добавляем клиента в список
@@ -101,9 +102,9 @@ function broadcastOnlineUsers(realm) {
   const clients = realmClients.get(realm);
   if (!clients) return;
 
-  const users = Array.from(clients)
-    .map((client) => usernames.get(client))
-    .filter(Boolean);
+  const users = [...clients]
+    .filter(c => c.username)
+    .map(c => c.username);
 
   clients.forEach((client) => {
     if (client.readyState === 1) {
