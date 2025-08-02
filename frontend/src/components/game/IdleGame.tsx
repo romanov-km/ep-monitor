@@ -110,19 +110,19 @@ const IdleGame: React.FC<IdleGameProps> = ({
   const [petDps, setPetDps] = useState(0);
   const [achievements, setAchievements] = useState<Achievement[]>([{
     id: "first-click",
-    label: language === "ru" ? "Первый удар" : "First Click",
+    label: language === "ru" ? "First Click" : "Первый удар" ,
     achieved: false,
   }, {
     id: "gold-300",
-    label: language === "ru" ? "Накопи 300 золота" : "Collect 300 Gold",
+    label: language === "ru" ? "Collect 300 Gold" : "Накопи 300 золота" ,
     achieved: false,
   }, {
     id: "level-100",
-    label: language === "ru" ? "Достигни 100 уровня" : "Reach Level 100",
+    label: language === "ru" ? "Reach Level 100" : "Достигни 100 уровня" ,
     achieved: false,
   }, {
     id: "insane-click",
-    label: language === "ru" ? "Невороятный удар" : "INSANE 100k Clicks",
+    label: language === "ru" ? "INSANE 100k Clicks" : "Невороятный удар" ,
     achieved: false,
   }]);
 
