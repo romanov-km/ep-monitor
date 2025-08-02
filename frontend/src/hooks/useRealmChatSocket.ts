@@ -7,13 +7,18 @@ interface ChatEntry {
   text: string;
 }
 
-export const useRealmChatSocket = (realm: string, username: string) => {
+interface UseRealmChatSocketOptions {
+  onError?: (message: string) => void;
+}
+
+export const useRealmChatSocket = (realm: string, username: string, options?: UseRealmChatSocketOptions) => {
     const [messages, setMessages] = useState<ChatEntry[]>([]);
     const [userCount, setUserCount] = useState(0); // 👥 добавили
     const [onlineUsers, setOnlineUsers] = useState<string[]>([]);
     const socketRef = useRef<WebSocket | null>(null);
     const reconnectTimeoutRef = useRef<number | null>(null);
     const pingIntervalRef = useRef<number | null>(null);
+    const { onError } = options || {};
   
     const connect = () => {
       if (!realm || !username) return;
@@ -46,6 +51,11 @@ export const useRealmChatSocket = (realm: string, username: string) => {
         }
         if (data.type === "online_users") {
           setOnlineUsers(data.users);
+        }
+        if (data.type === "error") {
+          console.error("Ошибка от сервера:", data.message);
+          if (onError) onError(data.message);
+          socket.close();
         }
       };
   

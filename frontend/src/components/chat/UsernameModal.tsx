@@ -2,9 +2,10 @@ import React, { useState, useEffect } from "react";
 
 interface Props {
   onSubmit: (username: string) => void;
+  error?: string | null;  
 }
 
-const UsernameModal: React.FC<Props> = ({ onSubmit }) => {
+const UsernameModal: React.FC<Props> = ({ onSubmit, error }) => {
   const [name, setName] = useState("");
 
   const handleSave = () => {
@@ -27,11 +28,13 @@ const UsernameModal: React.FC<Props> = ({ onSubmit }) => {
         <h2 className="text-xl mb-4 font-semibold">Enter your name</h2>
         <input
           type="text"
+          ref={(el) => el?.focus()}
           className="w-full p-2 rounded bg-gray-700 text-white mb-4 outline-none"
           value={name}
           onChange={(e) => setName(e.target.value)}
           placeholder="For example, user"
         />
+        {error && <div className="text-red-400 text-sm mt-2">{error}</div>}
         <button
           onClick={handleSave}
           className="bg-green-600 hover:bg-green-700 w-full py-2 rounded"

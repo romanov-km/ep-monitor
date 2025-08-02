@@ -14,8 +14,14 @@ const RealmChat: React.FC<RealmChatProps> = observer(
     const scrollRef = useRef<HTMLDivElement>(null);
     const [text, setText] = useState("");
     const [showModal, setShowModal] = useState(false);
+    const [error, setError] = useState<string | null>(null);
     const { messages, sendMessage, userCount, onlineUsers } =
-      useRealmChatSocket(realm, username);
+      useRealmChatSocket(realm, username, {
+        onError: (msg) => {
+          setError(msg);
+          setShowModal(true);
+        },
+      });
 
     const handleFocus = () => {
       if (!username) setShowModal(true);
@@ -118,6 +124,7 @@ const RealmChat: React.FC<RealmChatProps> = observer(
             onSubmit={(name) => {
               onUsernameSubmit(name);
               setShowModal(false);
+              setError(null);
             }}
           />
         )}
