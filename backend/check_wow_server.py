@@ -33,7 +33,7 @@ REALMS = [
         "port": 8085,
     },
     {
-        "name": "Kezan PVE (Windows, old)",
+        "name": "Kezan PVE (Windows old)",
         "host": "game.project-epoch.net",
         "port": 8085,
     },
