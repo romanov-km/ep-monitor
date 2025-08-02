@@ -38,23 +38,33 @@ const RealmChat: React.FC<RealmChatProps> = observer(
     return (
       <div className="p-4 bg-gray-900 border border-gray-700 rounded-lg w-full  mx-auto mt-4 mb-4">
         <h2 className="text-lg font-bold text-white mb-2">Chat:</h2>
-        <div className="text-sm text-gray-500 mb-2">
-          👥 In chat: {userCount}
-          {onlineUsers.length > 0 && (
-            <div className="mt-1 text-xs text-gray-400">
-              {onlineUsers.map((u, i) => (
-                <span
-                  key={i}
-                  className={
-                    u === username ? "text-green-400 font-semibold" : ""
-                  }
-                >
-                  {u}
-                  {i < onlineUsers.length - 1 ? ", " : ""}
-                </span>
-              ))}
-            </div>
-          )}
+        <div className="text-sm text-gray-500 mb-2 flex items-center justify-between">
+          <div>
+            👥 In chat: {userCount}
+            {onlineUsers.length > 0 && (
+              <div className="mt-1 text-xs text-gray-400">
+                {onlineUsers.map((u, i) => (
+                  <span
+                    key={i}
+                    className={
+                      u === username ? "text-green-400 font-semibold" : ""
+                    }
+                  >
+                    {u}
+                    {i < onlineUsers.length - 1 ? ", " : ""}
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Кнопка смены ника */}
+          <button
+            className="ml-2 px-2 py-1 bg-gray-800 hover:bg-gray-700 border border-gray-600 text-xs text-gray-300 rounded"
+            onClick={() => setShowModal(true)}
+          >
+            Change name
+          </button>
         </div>
         <div className="bg-black p-2 h-60 overflow-y-auto rounded border border-gray-600">
           {messages.map((msg, idx) => {
@@ -85,7 +95,6 @@ const RealmChat: React.FC<RealmChatProps> = observer(
           })}
           <div ref={scrollRef} />
         </div>
-
         <div className="mt-2 flex">
           <input
             type="text"
@@ -104,7 +113,6 @@ const RealmChat: React.FC<RealmChatProps> = observer(
             {text.trim() ? "Send" : "Enter your message"}
           </button>
         </div>
-
         {showModal && (
           <UsernameModal
             onSubmit={(name) => {
