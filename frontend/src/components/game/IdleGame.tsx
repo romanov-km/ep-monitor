@@ -13,6 +13,12 @@ interface IdleGameProps {
   onClose?: () => void;
 }
 
+interface Achievement {
+  id: string;
+  label: string;
+  achieved: boolean;
+}
+
 const mobNames = {
   ru: [
     "Голодный гнолл",
@@ -80,7 +86,11 @@ const randomLoot = (lang: "ru" | "en"): LootItem => {
   };
 };
 
-const IdleGame: React.FC<IdleGameProps> = ({ onStatsUpdate, language, onClose }) => {
+const IdleGame: React.FC<IdleGameProps> = ({
+  onStatsUpdate,
+  language,
+  onClose,
+}) => {
   const [gold, setGold] = useState(0);
   const [clickDmg, setClickDmg] = useState(1);
   const [dps, setDps] = useState(0);
@@ -98,6 +108,23 @@ const IdleGame: React.FC<IdleGameProps> = ({ onStatsUpdate, language, onClose })
   const [petUnlocked, setPetUnlocked] = useState(false);
   const [petLevel, setPetLevel] = useState(1);
   const [petDps, setPetDps] = useState(0);
+  const [achievements, setAchievements] = useState<Achievement[]>([{
+    id: "first-click",
+    label: language === "ru" ? "Первый удар" : "First Click",
+    achieved: false,
+  }, {
+    id: "gold-300",
+    label: language === "ru" ? "Накопи 300 золота" : "Collect 300 Gold",
+    achieved: false,
+  }, {
+    id: "level-100",
+    label: language === "ru" ? "Достигни 100 уровня" : "Reach Level 100",
+    achieved: false,
+  }, {
+    id: "insane-click",
+    label: language === "ru" ? "Невороятный удар" : "INSANE 100k Clicks",
+    achieved: false,
+  }]);
 
   useEffect(() => {
     const savedGold = localStorage.getItem("gold");
@@ -229,13 +256,30 @@ const IdleGame: React.FC<IdleGameProps> = ({ onStatsUpdate, language, onClose })
     }
   }, [language]);
 
+  useEffect(() => {
+    if (clicks > 0 && !achievements.find(a => a.id === "first-click")?.achieved) {
+      setAchievements(prev => prev.map(a => a.id === "first-click" ? { ...a, achieved: true } : a));
+    }
+    if (gold >= 300 && !achievements.find(a => a.id === "gold-300")?.achieved) {
+      setAchievements(prev => prev.map(a => a.id === "gold-300" ? { ...a, achieved: true } : a));
+    }
+    if (mobLevel >= 100 && !achievements.find(a => a.id === "level-100")?.achieved) {
+      setAchievements(prev => prev.map(a => a.id === "level-100" ? { ...a, achieved: true } : a));
+    }
+    if (clicks >= 100000 && !achievements.find(a => a.id === "insane-click")?.achieved) {
+      setAchievements(prev => prev.map(a => a.id === "insane-click" ? { ...a, achieved: true } : a));
+    }
+  }, [clicks, gold, mobLevel]);
+
   return (
+    
     <div className="p-4 text-white bg-gray-900 min-h-screen font-mono relative overflow-hidden">
+      <h1 className="text-2xl font-bold mb-4 z-20 relative">{t.title}</h1>
+      
       {flash && (
         <div className="absolute inset-0 bg-yellow-300 opacity-20 animate-ping z-10"></div>
       )}
 
-      <h1 className="text-2xl font-bold mb-4 z-20 relative">{t.title}</h1>
       <div className="mb-2 z-20 relative">
         {t.gold}: {gold}
       </div>
@@ -312,15 +356,15 @@ const IdleGame: React.FC<IdleGameProps> = ({ onStatsUpdate, language, onClose })
         </div>
       )}
 
-{onClose && (
-  <button
-    onClick={onClose}
-    className="absolute top-2 right-2 text-white bg-red-600 hover:bg-red-700 rounded-full w-8 h-8 flex items-center justify-center z-30"
-    title="Закрыть игру"
-  >
-    ✖
-  </button>
-)}
+      {onClose && (
+        <button
+          onClick={onClose}
+          className="absolute top-2 right-2 text-white bg-red-600 hover:bg-red-700 rounded-full w-8 h-8 flex items-center justify-center z-30"
+          title="Закрыть игру"
+        >
+          ✖
+        </button>
+      )}
 
       {loot && (
         <div className="mt-4 text-sm z-20 relative">
@@ -349,6 +393,13 @@ const IdleGame: React.FC<IdleGameProps> = ({ onStatsUpdate, language, onClose })
           {t.petHint}
         </div>
       )}
+
+      <div className="mb-2 z-20 relative">🎯 Achievements:</div>
+        <ul className="mb-4 z-20 relative list-disc pl-5 text-sm">
+          {achievements.map((a) => (
+            <li key={a.id} className={a.achieved ? "text-green-400" : "text-gray-400"}>{a.label}</li>
+          ))}
+      </ul>
     </div>
   );
 };

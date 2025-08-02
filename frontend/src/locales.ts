@@ -44,6 +44,8 @@ export const translations = {
         pet: "Питомец",
         crit: "КРИТ!",
         bonus: "🎉 Бонус",
+        achivment1: "Первый удар",
+        
       }
     },
     en: {
@@ -90,7 +92,8 @@ export const translations = {
         crit: "CRIT!",
         bonus: "🎉 Bonus",
         level: "level",
-        hp: "HP"
+        hp: "HP",
+        achivment1: "First Click"
       }
     },
   };

@@ -205,8 +205,12 @@ function App() {
         </button>
 
         {showGame && (
-          <div className="fixed bottom-4 right-4 w-[340px] h-[680px] z-50 bg-gray-800 rounded shadow-lg overflow-hidden border border-gray-700">
-            <IdleGame onStatsUpdate={setMiniGameStats} language={language} onClose={() => setShowGame(false)}/>
+          <div className="fixed bottom-4 right-4 w-[340px] h-[700px] z-50 bg-gray-800 rounded shadow-lg overflow-hidden border border-gray-700">
+            <IdleGame
+              onStatsUpdate={setMiniGameStats}
+              language={language}
+              onClose={() => setShowGame(false)}
+            />
           </div>
         )}
 
