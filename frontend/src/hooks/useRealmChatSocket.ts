@@ -23,7 +23,7 @@ export const useRealmChatSocket = (realm: string, username: string) => {
   
       socket.onopen = () => {
         console.log("✅ WebSocket connected");
-        socket.send(JSON.stringify({ type: "subscribe", realm }));
+        socket.send(JSON.stringify({ type: "subscribe", realm, username }));
   
         pingIntervalRef.current = setInterval(() => {
           socket.send(JSON.stringify({ type: "ping" }));
