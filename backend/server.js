@@ -174,7 +174,8 @@ app.get("/api/realm-status", async (req, res) => {
   try {
     // список реалмов (можно вынести в .env или в Redis позже)
     const realms = [
-      "Kezan_PVE",
+      "Kezan_PVE_Debian",
+      "Kezan_PVE_Windows",
       "Gurubashi_PVP"
     ];
 
