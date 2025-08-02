@@ -37,7 +37,7 @@ REALMS = [
     {
         "name": "Gurubashi PVP (Debian Linux)",
         "host": "ns3200144.ip-198-244-165.eu",
-        "port": 8085,
+        "port": 8086,
     },
     {
         "name": "Kezan PVE (Windows old)",
