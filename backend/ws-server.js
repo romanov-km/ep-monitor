@@ -15,6 +15,8 @@ await redisClient.connect();
 
 /** @type {Map<string, Set<WebSocket>>} */
 const realmClients = new Map();
+/** @type {Map<WebSocket, string>} */
+const usernames = new Map();
 
 wss.on('connection', (ws) => {
   ws.on('message', async (msg) => {
@@ -29,6 +31,8 @@ wss.on('connection', (ws) => {
       if (data.type === 'subscribe') {
         const realm = data.realm;
         ws.realm = realm;
+        const username = data.user;
+        usernames.set(ws, username);
 
         // Добавляем клиента в список
         if (!realmClients.has(realm)) {
@@ -43,6 +47,7 @@ wss.on('connection', (ws) => {
 
         // Рассылаем обновлённый онлайн
         broadcastUserCount(realm);
+        broadcastOnlineUsers(realm);
         return;
       }
 
@@ -72,9 +77,11 @@ wss.on('connection', (ws) => {
 
   ws.on('close', () => {
     const realm = ws.realm;
+    usernames.delete(ws);
     if (realm && realmClients.has(realm)) {
       realmClients.get(realm).delete(ws);
       broadcastUserCount(realm);
+      broadcastOnlineUsers(realm);
     }
     console.log("Клиент отключился");
   });
@@ -86,6 +93,21 @@ function broadcastUserCount(realm) {
   realmClients.get(realm)?.forEach((client) => {
     if (client.readyState === 1) {
       client.send(JSON.stringify({ type: "user_count", count }));
+    }
+  });
+}
+// Чатерсы в чате имена
+function broadcastOnlineUsers(realm) {
+  const clients = realmClients.get(realm);
+  if (!clients) return;
+
+  const users = Array.from(clients)
+    .map((client) => usernames.get(client))
+    .filter(Boolean);
+
+  clients.forEach((client) => {
+    if (client.readyState === 1) {
+      client.send(JSON.stringify({ type: "online_users", users }));
     }
   });
 }
