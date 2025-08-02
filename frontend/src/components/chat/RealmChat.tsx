@@ -14,7 +14,7 @@ const RealmChat: React.FC<RealmChatProps> = observer(
     const scrollRef = useRef<HTMLDivElement>(null);
     const [text, setText] = useState("");
     const [showModal, setShowModal] = useState(false);
-    const [error, setError] = useState<string | null>(null);
+    const [_error, setError] = useState<string | null>(null);
     const { messages, sendMessage, userCount, onlineUsers } =
       useRealmChatSocket(realm, username, {
         onError: (msg) => {
