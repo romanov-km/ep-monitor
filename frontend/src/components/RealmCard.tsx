@@ -14,7 +14,7 @@ export const RealmCard: React.FC<RealmCardProps> = observer(
     const isValidDate = !isNaN(date.getTime());
 
     return (
-      <div className="border border-gray-600 rounded-md p-3 bg-gray-900 text-gray-300">
+      <div className="border border-gray-600 rounded-md p-3 bg-gray-900 text-gray-300 m-1">
         <div className="flex items-center justify-between mb-1">
           <span className="text-xl">{icon}</span>
           <span
