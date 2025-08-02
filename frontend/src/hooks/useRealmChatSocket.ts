@@ -10,6 +10,7 @@ interface ChatEntry {
 export const useRealmChatSocket = (realm: string, username: string) => {
     const [messages, setMessages] = useState<ChatEntry[]>([]);
     const [userCount, setUserCount] = useState(0); // 👥 добавили
+    const [onlineUsers, setOnlineUsers] = useState<string[]>([]);
     const socketRef = useRef<WebSocket | null>(null);
     const reconnectTimeoutRef = useRef<number | null>(null);
     const pingIntervalRef = useRef<number | null>(null);
@@ -41,7 +42,10 @@ export const useRealmChatSocket = (realm: string, username: string) => {
         }
   
         if (data.type === "user_count") {
-          setUserCount(data.count); // 👈 обновляем количество
+          setUserCount(data.count); 
+        }
+        if (data.type === "online_users") {
+          setOnlineUsers(data.users);
         }
       };
   
@@ -55,6 +59,7 @@ export const useRealmChatSocket = (realm: string, username: string) => {
         console.error("🛑 WebSocket error:", error);
         socket.close();
       };
+      
     };
   
     const reconnect = () => {
@@ -83,6 +88,6 @@ export const useRealmChatSocket = (realm: string, username: string) => {
       }
     };
   
-    return { messages, sendMessage, userCount }; // 👈 экспортируем
+    return { messages, sendMessage, userCount, onlineUsers };
   };
   
