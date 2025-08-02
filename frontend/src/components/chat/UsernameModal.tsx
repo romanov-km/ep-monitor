@@ -28,7 +28,7 @@ const UsernameModal: React.FC<Props> = ({ onSubmit, error }) => {
         <h2 className="text-xl mb-4 font-semibold">Enter your name</h2>
         <input
           type="text"
-          ref={(el) => el?.focus()}
+          autoFocus
           className="w-full p-2 rounded bg-gray-700 text-white mb-4 outline-none"
           value={name}
           onChange={(e) => setName(e.target.value)}

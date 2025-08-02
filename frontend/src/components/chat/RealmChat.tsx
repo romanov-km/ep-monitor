@@ -34,6 +34,12 @@ const RealmChat: React.FC<RealmChatProps> = observer(
       }
     }, [messages]);
 
+    useEffect(() => {
+      if (username && !_error) {
+        setShowModal(false);
+      }
+    }, [username, _error]);
+
     const handleSend = () => {
       if (text.trim()) {
         sendMessage(text.trim());
@@ -123,8 +129,6 @@ const RealmChat: React.FC<RealmChatProps> = observer(
           <UsernameModal
             onSubmit={(name) => {
               onUsernameSubmit(name);
-              setShowModal(false);
-              setError(null);
             }}
           />
         )}
