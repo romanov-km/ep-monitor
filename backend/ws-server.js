@@ -35,6 +35,13 @@ wss.on('connection', (ws) => {
         ws.username = username;
         usernames.set(ws, username);
 
+        // Проверка на дублирующийся ник
+        const existingUsers = [...usernames.values()];
+          if (existingUsers.includes(username)) {
+          ws.send(JSON.stringify({ type: "error", message: "Username is already taken." }));
+          ws.close(); // Закрываем соединение
+          return;
+        }
         // Добавляем клиента в список
         if (!realmClients.has(realm)) {
           realmClients.set(realm, new Set());
