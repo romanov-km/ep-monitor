@@ -27,8 +27,21 @@ CHECK_INTERVAL = 60
 LAST_UPDATE_ID = 0
 
 REALMS = [
-    {"name": "Kezan PVE", "host": "game.project-epoch.net", "port": 8085},
-    {"name": "Gurubashi PVP", "host": "game.project-epoch.net", "port": 8086},
+    {
+        "name": "Kezan PVE (Debian Linux)",
+        "host": "ns31480980.ip-198-244-179.eu",
+        "port": 8085,
+    },
+    {
+        "name": "Kezan PVE (Windows, old)",
+        "host": "game.project-epoch.net",
+        "port": 8085,
+    },
+    {
+        "name": "Gurubashi PVP",
+        "host": "198.244.165.233",
+        "port": 8086,
+    },
 ]
 
 # Telegram
