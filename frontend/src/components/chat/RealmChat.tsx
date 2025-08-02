@@ -13,8 +13,12 @@ const RealmChat: React.FC<RealmChatProps> = observer(
   ({ realm, username, onUsernameSubmit }) => {
     const scrollRef = useRef<HTMLDivElement>(null);
     const [text, setText] = useState("");
-    const [showModal, setShowModal] = useState(false);
+    
     const [_error, setError] = useState<string | null>(null);
+
+    const [showModal, setShowModal] = useState<boolean>(!username);
+
+
     const { messages, sendMessage, userCount, onlineUsers } =
       useRealmChatSocket(realm, username, {
         onError: (msg) => {
@@ -23,22 +27,18 @@ const RealmChat: React.FC<RealmChatProps> = observer(
         },
       });
 
-    const handleFocus = () => {
-      if (!username) setShowModal(true);
-    };
+        // Закрыть модал при успешном вводе имени
+        useEffect(() => {
+          if (username && !_error) {
+            setShowModal(false);
+          }
+        }, [username, _error]);  
 
-    useEffect(() => {
-      const container = scrollRef.current?.parentElement;
-      if (container) {
-        container.scrollTop = container.scrollHeight;
-      }
-    }, [messages]);
-
-    useEffect(() => {
-      if (username && !_error) {
-        setShowModal(false);
-      }
-    }, [username, _error]);
+    // Обработчик сохранения ника из модалки
+    const handleUsernameSubmit = (name: string) => {
+      setError(null);           // Сброс предыдущей ошибки
+      onUsernameSubmit(name);    // Прокидываем новый ник в родителя
+    };  
 
     const handleSend = () => {
       if (text.trim()) {
@@ -46,6 +46,24 @@ const RealmChat: React.FC<RealmChatProps> = observer(
         setText("");
       }
     };
+
+    const handleChangeName = () => {
+      setError(null);
+      setShowModal(true);
+    };
+
+    const handleFocus = () => {
+      // Очистка ошибки при новом фокусе
+      if (!username) setError(null);
+    };
+
+
+    useEffect(() => {
+      const container = scrollRef.current?.parentElement;
+      if (container) {
+        container.scrollTop = container.scrollHeight;
+      }
+    }, [messages]);
 
     return (
       <div className="p-4 bg-gray-900 border border-gray-700 rounded-lg w-full  mx-auto mt-4 mb-4">
@@ -73,7 +91,7 @@ const RealmChat: React.FC<RealmChatProps> = observer(
           {/* Кнопка смены ника */}
           <button
             className="ml-2 px-2 py-1 bg-gray-800 hover:bg-gray-700 border border-gray-600 text-xs text-gray-300 rounded"
-            onClick={() => setShowModal(true)}
+            onClick={handleChangeName}
           >
             Change name
           </button>
@@ -127,11 +145,10 @@ const RealmChat: React.FC<RealmChatProps> = observer(
         </div>
         {showModal && (
           <UsernameModal
-            onSubmit={(name) => {
-              onUsernameSubmit(name);
-            }}
-          />
-        )}
+            error={_error}
+            onSubmit={handleUsernameSubmit}
+            />
+          )}
       </div>
     );
   }
