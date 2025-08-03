@@ -22,17 +22,6 @@ const RealmChat: React.FC<RealmChatProps> = observer(
     const [showModal, setShowModal] = useState<boolean>(!username);
     const [hasDuplicateError, setHasDuplicateError] = useState<boolean>(false);
 
-    // Удаляем старую систему звука, так как теперь используется новая система
-    // const [chatSoundEnabled, setChatSoundEnabled] = useState<boolean>(() => {
-    //   const saved = localStorage.getItem("chatSound");
-    //   if (saved === null) {
-    //     return false;
-    //   }
-    //   return saved === "on";
-    // });
-
-    // const playChatSound = useSound("/sounds/newmsg.ogg", 0.6);
-
     const { start: startTitleBlink, stop: stopTitleBlink } =
       useTitleNotifications();
 
@@ -62,15 +51,9 @@ const RealmChat: React.FC<RealmChatProps> = observer(
         },
         onNewMessage: (entry) => {
           if (entry.user !== username) {
-            // Используем новую систему звука только если соединение стабильно
-            if (isConnected && connectionStatus === 'connected') {
-              onChatMessage?.();
-            }
-            
-            // Убираем старую систему звука, так как она дублирует новую
-            // if (chatSoundEnabled) {
-            //   playChatSound();
-            // }
+            console.log("RealmChat: new message from", entry.user, "calling onChatMessage");
+            // Вызываем callback для воспроизведения звука
+            onChatMessage?.();
         
             if (document.visibilityState !== "visible") {
               startTitleBlink();

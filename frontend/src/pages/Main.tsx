@@ -16,6 +16,7 @@ import RealmChat from "../components/chat/RealmChat";
 import { parseStatus } from "../utils/parseStatus";
 import IdleGame from "../components/game/IdleGame";
 import { DebugPanel } from "../components/DebugPanel";
+// import RealmCharts from "../components/RealmCharts";
 
 interface StatusEntry {
   time: string;
@@ -54,7 +55,7 @@ function App() {
     return {
       realmUp: { enabled: true, soundType: "70elite", volume: 1 },
       authUp: { enabled: true, soundType: "levelup", volume: 1 },
-      chat: { enabled: false, soundType: "newmsg", volume: 0.6 },
+      chat: { enabled: true, soundType: "newmsg", volume: 0.6 },
     };
   });
 
@@ -86,19 +87,26 @@ function App() {
 
   const playSound = (eventType: keyof AppSoundSettings) => {
     const event = soundSettings[eventType];
-    if (!event.enabled) return;
+    console.log(`Playing sound for ${eventType}:`, event);
+    if (!event.enabled) {
+      console.log(`Sound ${eventType} is disabled`);
+      return;
+    }
 
     if (audioRef.current) {
       audioRef.current.pause();
       audioRef.current.currentTime = 0;
     }
 
-    const audio = new Audio(`/sounds/${event.soundType}${event.soundType === 'newmsg' ? '.ogg' : '.mp3'}`);
+    const audioPath = `/sounds/${event.soundType}${event.soundType === 'newmsg' ? '.ogg' : '.mp3'}`;
+    console.log(`Loading audio from: ${audioPath}`);
+    const audio = new Audio(audioPath);
     audio.volume = event.volume;
     audioRef.current = audio;
 
     audio
       .play()
+      .then(() => console.log(`Successfully playing ${eventType} sound`))
       .catch((err) => console.error("Ошибка при воспроизведении звука:", err));
   };
 
@@ -268,7 +276,12 @@ function App() {
         realm="Gurubashi PVP"
         username={username}
         onUsernameSubmit={handleUsernameSubmit}
-        onChatMessage={() => playSound("chat")}
+        onChatMessage={() => {
+          console.log("Chat message received, sound enabled:", soundSettings.chat.enabled);
+          if (soundSettings.chat.enabled) {
+            playSound("chat");
+          }
+        }}
       />
 
       <StatusChart chartData={chartData} />
