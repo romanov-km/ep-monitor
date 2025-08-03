@@ -88,8 +88,7 @@ const StatusChart: React.FC<StatusChartProps> = ({ chartData }) => {
               stroke="#00cc66"
               dot={false}
               strokeWidth={2}
-              isAnimationActive={true}
-              animationDuration={800}
+              isAnimationActive={false}
             />
           </LineChart>
         </ResponsiveContainer>
