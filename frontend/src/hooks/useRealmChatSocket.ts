@@ -91,6 +91,7 @@ export const useRealmChatSocket = (
       setConnectionStatus('connected');
       reconnectAttemptsRef.current = 0; // Сбрасываем счетчик при успешном подключении
       console.log("✅ WebSocket connected successfully");
+      console.log("📤 Sending subscription for realm:", realm, "username:", username);
       socket.send(JSON.stringify({ type: "subscribe", realm, username }));
 
       // пинги только когда сокет открыт
@@ -106,14 +107,15 @@ export const useRealmChatSocket = (
 
       switch (data.type) {
         case "error":
-          console.error("Server error:", data.message);
+          console.error("Server error:", data.message, "Code:", data.code);
           if (data.code === "duplicate_nick") {
+            console.warn("🚫 Duplicate nickname detected, blocking reconnection");
             reconnectBlockedRef.current = true;
-            // Задержка перед закрытием для обработки ошибки
+            // Увеличиваем задержку при ошибке дублирования ника
             setTimeout(() => {
               onError?.(data.message);
               safeClose();
-            }, 100);
+            }, 2000); // Увеличиваем с 100ms до 2000ms
           } else {
             onError?.(data.message);
             safeClose();
@@ -131,6 +133,10 @@ export const useRealmChatSocket = (
           break;
         case "online_users":
           setOnlineUsers(data.users);
+          break;
+        case "subscribe_success":
+          // Успешная подписка - сбрасываем флаг блокировки
+          reconnectBlockedRef.current = false;
           break;
       }
     };

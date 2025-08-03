@@ -41,12 +41,12 @@ const RealmChat: React.FC<RealmChatProps> = observer(
     const { messages, sendMessage, userCount, onlineUsers, isConnected, connectionStatus, manualReconnect } =
       useRealmChatSocket(realm, username, {
         onError: (msg) => {
-          setError(msg);
-          // Показываем модал при любой ошибке
-          setShowModal(true);
-          
+          // Показываем модал только для ошибок дублирования ника
           if (msg.includes("duplicate")) {
+            setError(msg);
+            setShowModal(true);
             setHasDuplicateError(true);
+            
             // Принудительно обновляем состояние несколько раз
             setTimeout(() => {
               setShowModal(true);
@@ -57,12 +57,17 @@ const RealmChat: React.FC<RealmChatProps> = observer(
             setTimeout(() => {
               setShowModal(true);
             }, 1000);
+          } else {
+            // Для других ошибок только логируем, но не показываем модал
+            console.warn("Chat error:", msg);
           }
         },
         onNewMessage: (entry) => {
           if (entry.user !== username) {
-            // Используем новую систему звука
-            onChatMessage?.();
+            // Используем новую систему звука только если соединение стабильно
+            if (isConnected && connectionStatus === 'connected') {
+              onChatMessage?.();
+            }
             
             // Старая система звука (для обратной совместимости)
             if (chatSoundEnabled) {
