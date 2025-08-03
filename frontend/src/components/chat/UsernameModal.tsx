@@ -2,7 +2,8 @@ import React, { useState, useEffect } from "react";
 
 interface Props {
   onSubmit: (username: string) => void;
-  error?: string | null;
+  error: string | null;
+  currentUsername?: string;
 }
 
 const UsernameModal: React.FC<Props> = ({ onSubmit, error }) => {
@@ -20,13 +21,13 @@ const UsernameModal: React.FC<Props> = ({ onSubmit, error }) => {
     };
     window.addEventListener("keydown", listener);
     return () => window.removeEventListener("keydown", listener);
-  }, [name]);
+  }, []);
 
   return (
     <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
       <div className="bg-gray-800 p-6 rounded-xl shadow-lg w-full max-w-sm text-white">
         <h2 className="text-xl mb-4 font-semibold">Enter your name</h2>
-        {error && <div className="text-red-400 mb-2 text-sm">{error}</div>}
+        {error && <div className="text-red-400 text-sm mb-2">{error}</div>}
         <input
           type="text"
           autoFocus
@@ -37,6 +38,7 @@ const UsernameModal: React.FC<Props> = ({ onSubmit, error }) => {
         />
         <button
           onClick={handleSave}
+          disabled={!name.trim()}
           className="bg-green-600 hover:bg-green-700 w-full py-2 rounded"
         >
           Save
