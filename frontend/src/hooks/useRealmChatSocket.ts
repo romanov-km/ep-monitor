@@ -76,7 +76,6 @@ export const useRealmChatSocket = (
         case "error":
         console.error("Server error:", data.message);
         if (data.code === "duplicate_nick") {
-          //reconnectBlocked = true;
           reconnectBlockedRef.current = true;
         }
         onError?.(data.message);
