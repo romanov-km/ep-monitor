@@ -22,6 +22,18 @@ interface StatusEntry {
   status: string;
 }
 
+interface SoundEvent {
+  enabled: boolean;
+  soundType: string;
+  volume: number;
+}
+
+interface AppSoundSettings {
+  realmUp: SoundEvent;
+  authUp: SoundEvent;
+  chat: SoundEvent;
+}
+
 const API_BASE = import.meta.env.VITE_API_BASE;
 
 function App() {
@@ -33,9 +45,18 @@ function App() {
   const [language, setLanguage] = useState<"ru" | "en">("en");
   const t = translations[language];
 
-  const [alertEnabled, setAlertEnabled] = useState(false);
-  const [volume, setVolume] = useState(1);
-  const [soundType, setSoundType] = useState("70elite");
+  // Новая система настроек звука
+  const [soundSettings, setSoundSettings] = useState<AppSoundSettings>(() => {
+    const saved = localStorage.getItem("soundSettings");
+    if (saved) {
+      return JSON.parse(saved);
+    }
+    return {
+      realmUp: { enabled: true, soundType: "70elite", volume: 1 },
+      authUp: { enabled: true, soundType: "levelup", volume: 1 },
+      chat: { enabled: false, soundType: "newmsg", volume: 0.6 },
+    };
+  });
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
@@ -49,6 +70,7 @@ function App() {
 
   const [showTelegram, setShowTelegram] = useState(false);
   const prevStatusesRef = useRef<Record<string, boolean>>({});
+  const prevAuthStatusRef = useRef<boolean>(false);
 
   const [showGame, setShowGame] = useState(false);
   const [miniGameStats, setMiniGameStats] = useState({
@@ -62,14 +84,17 @@ function App() {
     setUsername(name);
   };
 
-  const playSound = () => {
+  const playSound = (eventType: keyof AppSoundSettings) => {
+    const event = soundSettings[eventType];
+    if (!event.enabled) return;
+
     if (audioRef.current) {
       audioRef.current.pause();
       audioRef.current.currentTime = 0;
     }
 
-    const audio = new Audio(`/sounds/${soundType}.mp3`);
-    audio.volume = volume;
+    const audio = new Audio(`/sounds/${event.soundType}${event.soundType === 'newmsg' ? '.ogg' : '.mp3'}`);
+    audio.volume = event.volume;
     audioRef.current = audio;
 
     audio
@@ -84,9 +109,14 @@ function App() {
     }
   };
 
-  const playTestSound = () => {
-    if (alertEnabled) playSound();
+  const playTestSound = (eventType: keyof AppSoundSettings) => {
+    playSound(eventType);
   };
+
+  // Сохраняем настройки звука в localStorage
+  useEffect(() => {
+    localStorage.setItem("soundSettings", JSON.stringify(soundSettings));
+  }, [soundSettings]);
 
   useEffect(() => {
     const dispose = autorun(() => {
@@ -95,8 +125,8 @@ function App() {
         const prev = prevStatusesRef.current[realm.name];
 
         // Если сервер поднялся
-        if (prev === false && isUp && alertEnabled) {
-          playSound();
+        if (prev === false && isUp) {
+          playSound("realmUp");
         }
 
         // Сохраняем текущее состояние
@@ -105,7 +135,19 @@ function App() {
     });
 
     return () => dispose();
-  }, [alertEnabled]);
+  }, [soundSettings.realmUp]);
+
+  // Отслеживаем изменение статуса Auth сервера
+  useEffect(() => {
+    const prevAuthUp = prevAuthStatusRef.current;
+    
+    // Если Auth сервер поднялся
+    if (!prevAuthUp && isAuthUp) {
+      playSound("authUp");
+    }
+    
+    prevAuthStatusRef.current = isAuthUp;
+  }, [isAuthUp, soundSettings.authUp]);
 
   const fetchStatuses = async () => {
     try {
@@ -162,12 +204,8 @@ function App() {
   return (
     <div className="p-4 font-mono">
       <SoundSettings
-        alertEnabled={alertEnabled}
-        setAlertEnabled={setAlertEnabled}
-        volume={volume}
-        setVolume={setVolume}
-        soundType={soundType}
-        setSoundType={setSoundType}
+        soundSettings={soundSettings}
+        setSoundSettings={setSoundSettings}
         playTestSound={playTestSound}
         stopSound={stopSound}
       />
@@ -181,12 +219,12 @@ function App() {
         {language === "ru" ? (
           <>
             {isAuthUp ? t.authUp : t.authDown} {t.notifications}:{" "}
-            {alertEnabled ? "ВКЛ 🔔" : "ВЫКЛ 🔕"}
+            {soundSettings.realmUp.enabled ? "ВКЛ 🔔" : "ВЫКЛ 🔕"}
           </>
         ) : (
           <>
             {isAuthUp ? t.authUp : t.authDown} {t.notifications}:{" "}
-            {alertEnabled ? "ON 🔔" : "OFF 🔕"}
+            {soundSettings.realmUp.enabled ? "ON 🔔" : "OFF 🔕"}
           </>
         )}
       </div>
@@ -230,6 +268,7 @@ function App() {
         realm="Gurubashi PVP"
         username={username}
         onUsernameSubmit={handleUsernameSubmit}
+        onChatMessage={() => playSound("chat")}
       />
 
       <StatusChart chartData={chartData} />

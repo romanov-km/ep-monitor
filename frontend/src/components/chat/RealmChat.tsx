@@ -10,10 +10,11 @@ interface RealmChatProps {
   realm: string;
   username: string;
   onUsernameSubmit: (username: string) => void;
+  onChatMessage?: () => void;
 }
 
 const RealmChat: React.FC<RealmChatProps> = observer(
-  ({ realm, username, onUsernameSubmit }) => {
+  ({ realm, username, onUsernameSubmit, onChatMessage }) => {
     const scrollRef = useRef<HTMLDivElement>(null);
     const [text, setText] = useState("");
 
@@ -60,6 +61,10 @@ const RealmChat: React.FC<RealmChatProps> = observer(
         },
         onNewMessage: (entry) => {
           if (entry.user !== username) {
+            // Используем новую систему звука
+            onChatMessage?.();
+            
+            // Старая система звука (для обратной совместимости)
             if (chatSoundEnabled) {
               playChatSound();
             }
