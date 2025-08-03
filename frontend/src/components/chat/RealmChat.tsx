@@ -23,7 +23,13 @@ const RealmChat: React.FC<RealmChatProps> = observer(
     const [hasDuplicateError, setHasDuplicateError] = useState<boolean>(false);
 
     const [chatSoundEnabled, setChatSoundEnabled] = useState<boolean>(() => {
-      return localStorage.getItem("chatSound") === "off"; // по умолчанию ВЫКЛ
+      const saved = localStorage.getItem("chatSound");
+      // Если нет сохраненного значения, по умолчанию ВЫКЛ
+      if (saved === null) {
+        return false;
+      }
+      // Если есть значение, то "on" = включен, "off" = выключен
+      return saved === "on";
     });
 
     const playChatSound = useSound("/sounds/newmsg.ogg", 0.6);
@@ -34,32 +40,29 @@ const RealmChat: React.FC<RealmChatProps> = observer(
     const { messages, sendMessage, userCount, onlineUsers, isConnected } =
       useRealmChatSocket(realm, username, {
         onError: (msg) => {
-          console.log("Chat error:", msg);
           setError(msg);
           // Показываем модал при любой ошибке
           setShowModal(true);
           
           if (msg.includes("duplicate")) {
-            console.log("Duplicate error detected, setting flags...");
             setHasDuplicateError(true);
             // Принудительно обновляем состояние несколько раз
             setTimeout(() => {
-              console.log("Forcing modal to show (1)...");
               setShowModal(true);
             }, 100);
             setTimeout(() => {
-              console.log("Forcing modal to show (2)...");
               setShowModal(true);
             }, 500);
             setTimeout(() => {
-              console.log("Forcing modal to show (3)...");
               setShowModal(true);
             }, 1000);
           }
         },
         onNewMessage: (entry) => {
           if (entry.user !== username) {
-            if (chatSoundEnabled) playChatSound();
+            if (chatSoundEnabled) {
+              playChatSound();
+            }
         
             if (document.visibilityState !== "visible") {
               startTitleBlink();
@@ -70,9 +73,7 @@ const RealmChat: React.FC<RealmChatProps> = observer(
 
     // Показать модал при ошибке
     useEffect(() => {
-      console.log("useEffect triggered - error:", error, "hasDuplicateError:", hasDuplicateError, "showModal:", showModal);
       if (error || hasDuplicateError) {
-        console.log("Setting showModal to true due to error:", error);
         setShowModal(true);
       }
     }, [error, hasDuplicateError, showModal]);
@@ -86,10 +87,19 @@ const RealmChat: React.FC<RealmChatProps> = observer(
       }
     }, [username, error, isConnected]);
 
-    // Отслеживаем изменения showModal
+
+
+    // Остановить мигание при фокусе на вкладке
     useEffect(() => {
-      console.log("showModal changed to:", showModal);
-    }, [showModal]);
+      const handleVisibilityChange = () => {
+        if (document.visibilityState === "visible") {
+          stopTitleBlink();
+        }
+      };
+
+      document.addEventListener("visibilitychange", handleVisibilityChange);
+      return () => document.removeEventListener("visibilitychange", handleVisibilityChange);
+    }, [stopTitleBlink]);
 
     // Обработчик сохранения ника из модалки
     const handleUsernameSubmit = useCallback(

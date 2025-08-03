@@ -10,7 +10,9 @@ export const useSound = (file: string, volume = 1) => {
     }
     audioRef.current.pause();
     audioRef.current.currentTime = 0;
-    audioRef.current.play().catch(() => {});
+    audioRef.current.play().catch((error) => {
+      console.error("Failed to play sound:", error);
+    });
   };
 
   return play;
