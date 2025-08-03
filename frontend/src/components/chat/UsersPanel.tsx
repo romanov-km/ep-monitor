@@ -19,19 +19,27 @@ export const UsersPanel: React.FC<UsersPanelProps> = ({
 
   const hidden = onlineUsers.length - visible.length;
 
+  const truncate = (str: string, n = 15) =>
+    str.length > n ? str.slice(0, n) + "…" : str;
+
   return (
-    <aside className="sm:w-48 md:w-56 lg:w-64 shrink-0">
+    <aside className="sm:w-48 md:w-56 lg:w-44 shrink-0">
       <h3 className="text-sm font-semibold text-white mb-1">
         👥 In chat: {userCount}
       </h3>
-
+      
       <div className="text-xs text-gray-400 max-h-60 overflow-y-auto space-y-1 pr-1">
         {visible.map((u, i) => (
           <div
             key={i}
-            className={u === username ? "text-green-400 font-semibold" : ""}
+            className={
+                u === username
+                  ? "text-green-400 font-semibold"
+                  : ""
+              }
+            title={u}
           >
-            {u}
+           {truncate(u, 20)} 
           </div>
         ))}
 

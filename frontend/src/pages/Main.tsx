@@ -15,6 +15,7 @@ import { autorun } from "mobx";
 import RealmChat from "../components/chat/RealmChat";
 import { parseStatus } from "../utils/parseStatus";
 import IdleGame from "../components/game/IdleGame";
+import { DebugPanel } from "../components/DebugPanel";
 
 interface StatusEntry {
   time: string;
@@ -234,6 +235,8 @@ function App() {
       <StatusChart chartData={chartData} />
 
       <StatusList statuses={statuses} />
+
+      <DebugPanel />
 
       <Footer t={t} />
 

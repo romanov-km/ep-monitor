@@ -3,6 +3,8 @@ import { observer } from "mobx-react-lite";
 import { useRealmChatSocket } from "../../hooks/useRealmChatSocket";
 import UsernameModal from "./UsernameModal";
 import { UsersPanel } from "./UsersPanel";
+import { useSound } from "../../hooks/useSound";
+import { useTitleNotifications } from "../../hooks/useTitleNotifications";
 
 interface RealmChatProps {
   realm: string;
@@ -19,14 +21,32 @@ const RealmChat: React.FC<RealmChatProps> = observer(
 
     const [showModal, setShowModal] = useState<boolean>(!username);
 
+    const [chatSoundEnabled, setChatSoundEnabled] = useState<boolean>(() => {
+      return localStorage.getItem("chatSound") === "off"; // по умолчанию ВЫКЛ
+    });
+
+    const playChatSound = useSound("/sounds/newmsg.ogg", 0.6);
+
+    const { start: startTitleBlink, stop: stopTitleBlink } =
+      useTitleNotifications();
+
     const { messages, sendMessage, userCount, onlineUsers, isConnected } =
       useRealmChatSocket(realm, username, {
         onError: (msg) => {
-          if (msg.includes("дубликат")) {
+          if (msg.includes("duplicate")) {
             setShowModal(true);
           }
           setError(msg);
           setShowModal(true);
+        },
+        onNewMessage: (entry) => {
+          if (entry.user !== username) {
+            if (chatSoundEnabled) playChatSound();
+        
+            if (document.visibilityState !== "visible") {
+              startTitleBlink();
+            }
+          }
         },
       });
 
@@ -68,6 +88,12 @@ const RealmChat: React.FC<RealmChatProps> = observer(
       [handleSend]
     );
 
+    // когда пользователь открыл чат или отправил своё сообщение — остановить мигание
+    useEffect(() => {
+      stopTitleBlink();
+    }, [messages, stopTitleBlink]);
+
+    //скрол чата при новых сообщениях
     useEffect(() => {
       const container = scrollRef.current?.parentElement;
       if (container) {
@@ -79,12 +105,28 @@ const RealmChat: React.FC<RealmChatProps> = observer(
       <div className="p-4 bg-gray-900 border border-gray-700 rounded-lg w-full  mx-auto mt-4 mb-4">
         <div className="flex justify-between items-end">
           <h2 className="text-lg font-bold text-white">Chat:</h2>
-          <button
-            className="ml-2 px-2 py-1 bg-gray-800 hover:bg-gray-700 border border-gray-600 text-xs text-gray-300 rounded"
-            onClick={handleChangeName}
-          >
-            Change name
-          </button>
+          <div className="flex items-center gap-2">
+            {/* звук чата */}
+            <button
+              title={chatSoundEnabled ? "Mute chat sound" : "Unmute chat sound"}
+              className="text-lg"
+              onClick={() => {
+                setChatSoundEnabled((prev) => {
+                  const next = !prev;
+                  localStorage.setItem("chatSound", next ? "on" : "off");
+                  return next;
+                });
+              }}
+            >
+              {chatSoundEnabled ? "🔔" : "🔕"}
+            </button>
+            <button
+              className="ml-2 px-2 py-1 bg-gray-800 hover:bg-gray-700 border border-gray-600 text-xs text-gray-300 rounded"
+              onClick={handleChangeName}
+            >
+              Change name
+            </button>
+          </div>
         </div>
         {!isConnected && (
           <span className="text-xs text-yellow-500">Connecting...</span>

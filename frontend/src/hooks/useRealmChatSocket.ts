@@ -9,6 +9,7 @@ interface ChatEntry {
 
 interface UseRealmChatSocketOptions {
   onError?: (message: string) => void;
+  onNewMessage: (entry: ChatEntry) => void;
   pingInterval?: number;
   reconnectDelay?: number;
 }
@@ -86,6 +87,7 @@ export const useRealmChatSocket = (
           break;
         case "new_message":
           setMessages((prev) => [...prev, data.entry]);
+          options?.onNewMessage?.(data.entry);
           break;
         case "user_count":
           setUserCount(data.count);
