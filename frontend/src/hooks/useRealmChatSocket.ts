@@ -31,21 +31,35 @@ export const useRealmChatSocket = (
 
   const safeClose = () => {
     const sock = socketRef.current;
-    if (
-      sock &&
-      (sock.readyState === WebSocket.OPEN ||
-        sock.readyState === WebSocket.CONNECTING)
-    ) {
-      sock.close();
+    if (sock) {
+      // Убираем обработчики событий перед закрытием
+      sock.onclose = null;
+      sock.onerror = null;
+      sock.onmessage = null;
+      sock.onopen = null;
+      
+      if (
+        sock.readyState === WebSocket.OPEN ||
+        sock.readyState === WebSocket.CONNECTING
+      ) {
+        sock.close();
+      }
     }
+    socketRef.current = null;
   };
 
   const connect = () => {
     if (!realm || !username) return;
+    
+    // Проверяем, не создаем ли мы уже соединение
+    if (socketRef.current) {
+      console.log("⚠️ Connection already exists, skipping...");
+      return;
+    }
 
     reconnectBlockedRef.current = false;
 
-    // Дубликат соединения
+    // Очищаем предыдущее соединение
     safeClose();
     clearInterval(pingIntervalRef.current!);
     clearTimeout(reconnectTimeoutRef.current!);
@@ -69,19 +83,21 @@ export const useRealmChatSocket = (
     socket.onmessage = (event) => {
       const data = JSON.parse(event.data);
 
-      if (data.type === "error" && data.code === "duplicate_nick") {
-          reconnectBlockedRef.current = true;
-         }
-
       switch (data.type) {
         case "error":
-        console.error("Server error:", data.message);
-        if (data.code === "duplicate_nick") {
-          reconnectBlockedRef.current = true;
-        }
-        onError?.(data.message);
-        safeClose();
-        break;
+          console.error("Server error:", data.message);
+          if (data.code === "duplicate_nick") {
+            reconnectBlockedRef.current = true;
+            // Задержка перед закрытием для обработки ошибки
+            setTimeout(() => {
+              onError?.(data.message);
+              safeClose();
+            }, 100);
+          } else {
+            onError?.(data.message);
+            safeClose();
+          }
+          break;
         case "history":
           setMessages(data.entries);
           break;
@@ -102,12 +118,13 @@ export const useRealmChatSocket = (
       console.warn("❌ WebSocket closed");
       setIsConnected(false);
       clearInterval(pingIntervalRef.current!);
-      // реконект
-      if (!reconnectTimeoutRef.current && !reconnectBlockedRef.current) {
+      
+      // реконект только если не заблокирован и нет активного таймаута
+      if (!reconnectTimeoutRef.current && !reconnectBlockedRef.current && socketRef.current) {
         reconnectTimeoutRef.current = window.setTimeout(() => {
           console.log("🔁 Reconnecting WebSocket...");
-          connect();
           reconnectTimeoutRef.current = null;
+          connect();
         }, 1000);
       }
     };
@@ -119,15 +136,27 @@ export const useRealmChatSocket = (
   };
 
   useEffect(() => {
+    // Очищаем предыдущее соединение
+    safeClose();
+    clearInterval(pingIntervalRef.current!);
+    clearTimeout(reconnectTimeoutRef.current!);
     
+    // Сбрасываем состояние
     setMessages([]);
     setOnlineUsers([]);
     setUserCount(0);
     setIsConnected(false);
     
-    connect();
+    // Сбрасываем флаг блокировки реконнекта
+    reconnectBlockedRef.current = false;
+    
+    // Устанавливаем небольшую задержку перед подключением
+    const timeoutId = setTimeout(() => {
+      connect();
+    }, 100);
 
     return () => {
+      clearTimeout(timeoutId);
       safeClose();
       clearInterval(pingIntervalRef.current!);
       clearTimeout(reconnectTimeoutRef.current!);

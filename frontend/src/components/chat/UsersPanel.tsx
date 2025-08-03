@@ -19,8 +19,10 @@ export const UsersPanel: React.FC<UsersPanelProps> = ({
 
   const hidden = onlineUsers.length - visible.length;
 
-  const truncate = (str: string, n = 15) =>
-    str.length > n ? str.slice(0, n) + "…" : str;
+  const truncate = (str: string | null | undefined, n = 15) => {
+    if (!str) return "";
+    return str.length > n ? str.slice(0, n) + "…" : str;
+  };
 
   return (
     <aside className="sm:w-48 md:w-56 lg:w-44 shrink-0">
@@ -29,7 +31,7 @@ export const UsersPanel: React.FC<UsersPanelProps> = ({
       </h3>
       
       <div className="text-xs text-gray-400 max-h-60 overflow-y-auto space-y-1 pr-1">
-        {visible.map((u, i) => (
+        {visible.filter(Boolean).map((u, i) => (
           <div
             key={i}
             className={
