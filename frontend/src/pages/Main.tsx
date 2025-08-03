@@ -93,21 +93,26 @@ function App() {
       return;
     }
 
+    // Останавливаем предыдущий звук, если он играет
     if (audioRef.current) {
       audioRef.current.pause();
       audioRef.current.currentTime = 0;
     }
 
-    const audioPath = `/sounds/${event.soundType}${event.soundType === 'newmsg' ? '.ogg' : '.mp3'}`;
-    console.log(`Loading audio from: ${audioPath}`);
-    const audio = new Audio(audioPath);
-    audio.volume = event.volume;
-    audioRef.current = audio;
+    // Загружаем новый звук с задержкой, чтобы избежать перезагрузки звука
+    setTimeout(() => {
+      const audioPath = `/sounds/${event.soundType}${event.soundType === 'newmsg' ? '.ogg' : '.mp3'}`;
+      console.log(`Loading audio from: ${audioPath}`);
+      const audio = new Audio(audioPath);
+      audio.volume = event.volume;
+      audioRef.current = audio;
+  
+      audio
+        .play()
+        .then(() => console.log(`Successfully playing ${eventType} sound`))
+        .catch((err) => console.error("Ошибка при воспроизведении звука:", err));
+    }, 50);
 
-    audio
-      .play()
-      .then(() => console.log(`Successfully playing ${eventType} sound`))
-      .catch((err) => console.error("Ошибка при воспроизведении звука:", err));
   };
 
   const stopSound = () => {
