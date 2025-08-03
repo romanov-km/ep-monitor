@@ -3,7 +3,6 @@ import { observer } from "mobx-react-lite";
 import { useRealmChatSocket } from "../../hooks/useRealmChatSocket";
 import UsernameModal from "./UsernameModal";
 import { UsersPanel } from "./UsersPanel";
-import { useSound } from "../../hooks/useSound";
 import { useTitleNotifications } from "../../hooks/useTitleNotifications";
 
 interface RealmChatProps {
@@ -23,17 +22,16 @@ const RealmChat: React.FC<RealmChatProps> = observer(
     const [showModal, setShowModal] = useState<boolean>(!username);
     const [hasDuplicateError, setHasDuplicateError] = useState<boolean>(false);
 
-    const [chatSoundEnabled, setChatSoundEnabled] = useState<boolean>(() => {
-      const saved = localStorage.getItem("chatSound");
-      // Если нет сохраненного значения, по умолчанию ВЫКЛ
-      if (saved === null) {
-        return false;
-      }
-      // Если есть значение, то "on" = включен, "off" = выключен
-      return saved === "on";
-    });
+    // Удаляем старую систему звука, так как теперь используется новая система
+    // const [chatSoundEnabled, setChatSoundEnabled] = useState<boolean>(() => {
+    //   const saved = localStorage.getItem("chatSound");
+    //   if (saved === null) {
+    //     return false;
+    //   }
+    //   return saved === "on";
+    // });
 
-    const playChatSound = useSound("/sounds/newmsg.ogg", 0.6);
+    // const playChatSound = useSound("/sounds/newmsg.ogg", 0.6);
 
     const { start: startTitleBlink, stop: stopTitleBlink } =
       useTitleNotifications();
@@ -69,10 +67,10 @@ const RealmChat: React.FC<RealmChatProps> = observer(
               onChatMessage?.();
             }
             
-            // Старая система звука (для обратной совместимости)
-            if (chatSoundEnabled) {
-              playChatSound();
-            }
+            // Убираем старую систему звука, так как она дублирует новую
+            // if (chatSoundEnabled) {
+            //   playChatSound();
+            // }
         
             if (document.visibilityState !== "visible") {
               startTitleBlink();
@@ -159,22 +157,8 @@ const RealmChat: React.FC<RealmChatProps> = observer(
         <div className="flex justify-between items-end">
           <h2 className="text-lg font-bold text-white">Chat:</h2>
           <div className="flex items-center gap-2">
-            {/* звук чата */}
             <button
-              title={chatSoundEnabled ? "Mute chat sound" : "Unmute chat sound"}
-              className="text-lg"
-              onClick={() => {
-                setChatSoundEnabled((prev) => {
-                  const next = !prev;
-                  localStorage.setItem("chatSound", next ? "on" : "off");
-                  return next;
-                });
-              }}
-            >
-              {chatSoundEnabled ? "🔔" : "🔕"}
-            </button>
-            <button
-              className="ml-2 px-2 py-1 bg-gray-800 hover:bg-gray-700 border border-gray-600 text-xs text-gray-300 rounded"
+              className="px-2 py-1 bg-gray-800 hover:bg-gray-700 border border-gray-600 text-xs text-gray-300 rounded"
               onClick={handleChangeName}
             >
               Change name
