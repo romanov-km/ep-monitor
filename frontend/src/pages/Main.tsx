@@ -100,7 +100,7 @@ function App() {
     }
 
     // Загружаем новый звук с задержкой, чтобы избежать перезагрузки звука
-    setTimeout(() => {
+    
       const audioPath = `/sounds/${event.soundType}${event.soundType === 'newmsg' ? '.ogg' : '.mp3'}`;
       console.log(`Loading audio from: ${audioPath}`);
       const audio = new Audio(audioPath);
@@ -111,7 +111,6 @@ function App() {
         .play()
         .then(() => console.log(`Successfully playing ${eventType} sound`))
         .catch((err) => console.error("Ошибка при воспроизведении звука:", err));
-    }, 50);
 
   };
 
