@@ -126,6 +126,45 @@ function App() {
     localStorage.setItem("soundSettings", JSON.stringify(soundSettings));
   }, [soundSettings]);
 
+  // Слушаем изменения в localStorage для синхронизации настроек звука
+  useEffect(() => {
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === "soundSettings" && e.newValue) {
+        try {
+          const newSettings = JSON.parse(e.newValue);
+          setSoundSettings(newSettings);
+        } catch (error) {
+          console.error("Error parsing sound settings from localStorage:", error);
+        }
+      }
+    };
+
+    // Слушаем изменения localStorage из других вкладок
+    window.addEventListener("storage", handleStorageChange);
+
+    // Также проверяем localStorage периодически для изменений в той же вкладке
+    const interval = setInterval(() => {
+      const saved = localStorage.getItem("soundSettings");
+      if (saved) {
+        try {
+          const parsed = JSON.stringify(soundSettings);
+          if (saved !== parsed) {
+            const newSettings = JSON.parse(saved);
+            console.log("Updating sound settings from localStorage:", newSettings);
+            setSoundSettings(newSettings);
+          }
+        } catch (error) {
+          console.error("Error checking sound settings:", error);
+        }
+      }
+    }, 1000); // Проверяем каждую секунду
+
+    return () => {
+      window.removeEventListener("storage", handleStorageChange);
+      clearInterval(interval);
+    };
+  }, [soundSettings]);
+
   useEffect(() => {
     const dispose = autorun(() => {
       realmStore.realms.forEach((realm) => {
@@ -277,9 +316,11 @@ function App() {
         username={username}
         onUsernameSubmit={handleUsernameSubmit}
         onChatMessage={() => {
-          console.log("Chat message received, sound enabled:", soundSettings.chat.enabled);
+          console.log("Chat message received, sound enabled:", soundSettings.chat.enabled, "settings:", soundSettings.chat);
           if (soundSettings.chat.enabled) {
             playSound("chat");
+          } else {
+            console.log("Chat sound is disabled, not playing");
           }
         }}
       />

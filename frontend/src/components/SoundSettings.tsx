@@ -30,13 +30,16 @@ const SoundSettings: React.FC<SoundSettingsProps> = ({
   const toggleSettings = () => setOpen((prev) => !prev);
 
   const updateEvent = (eventType: keyof SoundSettings, updates: Partial<SoundEvent>) => {
-    setSoundSettings({
+    console.log("SoundSettings: updating", eventType, "with", updates);
+    const newSettings = {
       ...soundSettings,
       [eventType]: {
         ...soundSettings[eventType],
         ...updates,
       },
-    });
+    };
+    console.log("SoundSettings: new settings", newSettings);
+    setSoundSettings(newSettings);
   };
 
   const soundOptions = [
