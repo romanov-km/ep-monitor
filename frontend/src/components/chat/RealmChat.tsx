@@ -37,7 +37,7 @@ const RealmChat: React.FC<RealmChatProps> = observer(
     const { start: startTitleBlink, stop: stopTitleBlink } =
       useTitleNotifications();
 
-    const { messages, sendMessage, userCount, onlineUsers, isConnected } =
+    const { messages, sendMessage, userCount, onlineUsers, isConnected, connectionStatus, manualReconnect } =
       useRealmChatSocket(realm, username, {
         onError: (msg) => {
           setError(msg);
@@ -171,8 +171,30 @@ const RealmChat: React.FC<RealmChatProps> = observer(
             </button>
           </div>
         </div>
-        {!isConnected && (
-          <span className="text-xs text-yellow-500">Connecting...</span>
+        {connectionStatus === 'connecting' && (
+          <span className="text-xs text-yellow-500">🔄 Connecting...</span>
+        )}
+        {connectionStatus === 'reconnecting' && (
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-orange-500">🔄 Reconnecting...</span>
+            <button
+              onClick={manualReconnect}
+              className="text-xs bg-orange-600 hover:bg-orange-700 text-white px-2 py-1 rounded"
+            >
+              Retry now
+            </button>
+          </div>
+        )}
+        {connectionStatus === 'disconnected' && (
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-red-500">❌ Disconnected</span>
+            <button
+              onClick={manualReconnect}
+              className="text-xs bg-red-600 hover:bg-red-700 text-white px-2 py-1 rounded"
+            >
+              Reconnect
+            </button>
+          </div>
         )}
 
         <div className="flex flex-col sm:flex-row gap-4">
@@ -180,7 +202,10 @@ const RealmChat: React.FC<RealmChatProps> = observer(
             <div className="bg-black p-2 h-60 overflow-y-auto rounded border border-gray-600">
               {messages.length === 0 ? (
                 <div className="text-gray-500 text-center py-10">
-                  {isConnected ? "No messages yet" : "Connecting to chat..."}
+                  {connectionStatus === 'connected' ? "No messages yet" : 
+                   connectionStatus === 'connecting' ? "Connecting to chat..." :
+                   connectionStatus === 'reconnecting' ? "Reconnecting to chat..." :
+                   "Disconnected from chat"}
                 </div>
               ) : (
                 messages.map((msg) => {
@@ -219,7 +244,10 @@ const RealmChat: React.FC<RealmChatProps> = observer(
                 type="text"
                 className="flex-1 p-2 rounded bg-gray-800 border border-gray-600 text-white"
                 placeholder={
-                  !isConnected ? "Connecting..." : "Enter your message..."
+                  connectionStatus === 'connecting' ? "Connecting..." :
+                  connectionStatus === 'reconnecting' ? "Reconnecting..." :
+                  connectionStatus === 'disconnected' ? "Disconnected" :
+                  "Enter your message..."
                 }
                 value={text}
                 onChange={(e) => setText(e.target.value)}
@@ -227,7 +255,7 @@ const RealmChat: React.FC<RealmChatProps> = observer(
                 disabled={!isConnected}
               />
               <button
-                disabled={!text.trim() || !isConnected}
+                disabled={!text.trim() || connectionStatus !== 'connected'}
                 className="ml-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded disabled:opacity-10"
                 onClick={handleSend}
               >
