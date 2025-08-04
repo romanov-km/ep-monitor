@@ -80,16 +80,27 @@ function App() {
     dps: 0,
   });
 
+  // Состояние для отслеживания взаимодействия пользователя с страницей
+  const [userInteracted, setUserInteracted] = useState(false);
+
   const handleUsernameSubmit = (name: string) => {
     localStorage.setItem("username", name);
     setUsername(name);
   };
+
+
 
   const playSound = (eventType: keyof AppSoundSettings) => {
     const event = soundSettings[eventType];
     console.log(`Playing sound for ${eventType}:`, event);
     if (!event.enabled) {
       console.log(`Sound ${eventType} is disabled`);
+      return;
+    }
+
+    // Проверяем, взаимодействовал ли пользователь с страницей
+    if (!userInteracted) {
+      console.log("🔇 Audio blocked: user hasn't interacted with page yet");
       return;
     }
 
@@ -110,7 +121,12 @@ function App() {
       audio
         .play()
         .then(() => console.log(`Successfully playing ${eventType} sound`))
-        .catch((err) => console.error("Ошибка при воспроизведении звука:", err));
+        .catch((err) => {
+          console.error("Ошибка при воспроизведении звука:", err);
+          if (err.name === 'NotAllowedError') {
+            console.log("🔇 Audio blocked by browser policy - user needs to interact first");
+          }
+        });
 
   };
 
@@ -129,6 +145,29 @@ function App() {
   useEffect(() => {
     localStorage.setItem("soundSettings", JSON.stringify(soundSettings));
   }, [soundSettings]);
+
+  // Отслеживаем взаимодействие пользователя с страницей
+  useEffect(() => {
+    const handleInteraction = () => {
+      if (!userInteracted) {
+        console.log("👆 User interacted with page, audio enabled");
+        setUserInteracted(true);
+      }
+    };
+
+    // События, которые считаются взаимодействием
+    const events = ['click', 'keydown', 'touchstart', 'mousedown'];
+    
+    events.forEach(event => {
+      document.addEventListener(event, handleInteraction, { once: true });
+    });
+
+    return () => {
+      events.forEach(event => {
+        document.removeEventListener(event, handleInteraction);
+      });
+    };
+  }, [userInteracted]);
 
   // Слушаем изменения в localStorage для синхронизации настроек звука
   useEffect(() => {
@@ -271,11 +310,27 @@ function App() {
           <>
             {isAuthUp ? t.authUp : t.authDown} {t.notifications}:{" "}
             {soundSettings.realmUp.enabled ? "ВКЛ 🔔" : "ВЫКЛ 🔕"}
+            {!userInteracted && (
+              <button
+                onClick={() => setUserInteracted(true)}
+                className="ml-2 underline hover:no-underline"
+              >
+                (кликните для активации звука)
+              </button>
+            )}
           </>
         ) : (
           <>
             {isAuthUp ? t.authUp : t.authDown} {t.notifications}:{" "}
-            {soundSettings.realmUp.enabled ? "ON 🔔" : "OFF 🔕"}
+            {soundSettings.realmUp.enabled && userInteracted ? "ON 🔔" : "OFF 🔕"}
+            {!userInteracted && (
+              <button
+                onClick={() => setUserInteracted(true)}
+                className="ml-2 underline hover:no-underline"
+              >
+                (click to enable audio notifications)
+              </button>
+            )}
           </>
         )}
       </div>
