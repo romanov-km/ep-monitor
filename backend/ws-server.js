@@ -22,9 +22,10 @@ const CONNECTION_COOLDOWN = 2000; // 2 секунды между подключ�
 
 // Защита от DDoS атак
 const connectionAttempts = new Map(); // IP -> { count, firstAttempt }
-const MAX_CONNECTIONS_PER_IP = 5; // Максимум 5 подключений с одного IP
+const MAX_CONNECTIONS_PER_IP = 20; // Максимум 20 подключений с одного IP (было 5)
 const CONNECTION_WINDOW = 60000; // За 1 минуту
-const MAX_CONNECTION_RATE = 10; // Максимум 10 попыток подключения в минуту
+const MAX_CONNECTION_RATE = 50; // Максимум 50 попыток подключения в минуту (было 10)
+const ENABLE_DDOS_PROTECTION = process.env.ENABLE_DDOS_PROTECTION !== 'false'; // Можно отключить через env
 
 // Heartbeat механизм
 const clientHeartbeats = new Map();
@@ -43,11 +44,27 @@ process.on('SIGINT', gracefulShutdown);
 
 // Функция для получения IP адреса
 function getClientIP(ws) {
+  // Для Vercel и других прокси
   const req = ws._socket?.server?.request;
-  return req?.connection?.remoteAddress || 
-         req?.headers?.['x-forwarded-for']?.split(',')[0] || 
-         req?.headers?.['x-real-ip'] || 
-         'unknown';
+  const forwardedFor = req?.headers?.['x-forwarded-for'];
+  const realIP = req?.headers?.['x-real-ip'];
+  const remoteAddr = req?.connection?.remoteAddress;
+  
+  if (forwardedFor) {
+    return forwardedFor.split(',')[0].trim();
+  }
+  if (realIP) {
+    return realIP;
+  }
+  if (remoteAddr) {
+    return remoteAddr;
+  }
+  
+  // Fallback - используем случайный ID для каждого соединения
+  if (!ws._connectionId) {
+    ws._connectionId = Math.random().toString(36).substr(2, 9);
+  }
+  return `conn_${ws._connectionId}`;
 }
 
 async function gracefulShutdown() {
@@ -122,42 +139,50 @@ function clearHeartbeat(ws) {
   }
 }
 
-wss.on("connection", (ws) => {
+wss.on("connection", async (ws) => {
   const clientIP = getClientIP(ws);
   console.log(`🔌 Новое подключение с IP: ${clientIP}`);
   
-  // Проверяем DDoS защиту
-  const now = Date.now();
-  const attempts = connectionAttempts.get(clientIP) || { count: 0, firstAttempt: now };
-  
-  // Сбрасываем счетчик если прошло больше минуты
-  if (now - attempts.firstAttempt > CONNECTION_WINDOW) {
-    attempts.count = 0;
-    attempts.firstAttempt = now;
-  }
-  
-  attempts.count++;
-  connectionAttempts.set(clientIP, attempts);
-  
-  // Проверяем лимиты
-  if (attempts.count > MAX_CONNECTION_RATE) {
-    console.log(`🚫 DDoS protection: Too many connection attempts from ${clientIP} (${attempts.count} in ${Math.round((now - attempts.firstAttempt) / 1000)}s)`);
-    ws.close(1008, 'Rate limit exceeded');
-    return;
-  }
-  
-  // Подсчитываем активные соединения с этого IP
-  let activeConnectionsFromIP = 0;
-  wss.clients.forEach(client => {
-    if (getClientIP(client) === clientIP && client.readyState === WebSocket.OPEN) {
-      activeConnectionsFromIP++;
+  // Проверяем DDoS защиту только если включена
+  if (ENABLE_DDOS_PROTECTION) {
+    const now = Date.now();
+    const attempts = connectionAttempts.get(clientIP) || { count: 0, firstAttempt: now };
+    
+    // Сбрасываем счетчик если прошло больше минуты
+    if (now - attempts.firstAttempt > CONNECTION_WINDOW) {
+      attempts.count = 0;
+      attempts.firstAttempt = now;
     }
-  });
-  
-  if (activeConnectionsFromIP >= MAX_CONNECTIONS_PER_IP) {
-    console.log(`🚫 DDoS protection: Too many active connections from ${clientIP} (${activeConnectionsFromIP})`);
-    ws.close(1008, 'Too many connections');
-    return;
+    
+    attempts.count++;
+    connectionAttempts.set(clientIP, attempts);
+    
+    // Проверяем лимиты
+    if (attempts.count > MAX_CONNECTION_RATE) {
+      console.log(`🚫 DDoS protection: Too many connection attempts from ${clientIP} (${attempts.count} in ${Math.round((now - attempts.firstAttempt) / 1000)}s)`);
+      ws.close(1008, 'Rate limit exceeded');
+      return;
+    }
+    
+    // Подсчитываем активные соединения с этого IP
+    let activeConnectionsFromIP = 0;
+    wss.clients.forEach(client => {
+      if (getClientIP(client) === clientIP && client.readyState === WebSocket.OPEN) {
+        activeConnectionsFromIP++;
+      }
+    });
+    
+    if (activeConnectionsFromIP >= MAX_CONNECTIONS_PER_IP) {
+      console.log(`🚫 DDoS protection: Too many active connections from ${clientIP} (${activeConnectionsFromIP})`);
+      ws.close(1008, 'Too many connections');
+      return;
+    }
+    
+    // Добавляем небольшую задержку при подозрительной активности
+    if (attempts.count > MAX_CONNECTION_RATE * 0.7) {
+      console.log(`⚠️ Rate limiting: Adding delay for ${clientIP} (${attempts.count} attempts)`);
+      await new Promise(resolve => setTimeout(resolve, 1000)); // 1 секунда задержки
+    }
   }
   
   ws.on("message", async (msg) => {
@@ -423,4 +448,9 @@ setInterval(() => {
 
 server.listen(PORT, () => {
   console.log(`✅ WebSocket сервер запущен на порту ${PORT}`);
+  console.log(`🛡️ DDoS protection: ${ENABLE_DDOS_PROTECTION ? 'ENABLED' : 'DISABLED'}`);
+  if (ENABLE_DDOS_PROTECTION) {
+    console.log(`   - Max connections per IP: ${MAX_CONNECTIONS_PER_IP}`);
+    console.log(`   - Max connection rate: ${MAX_CONNECTION_RATE} per minute`);
+  }
 });
