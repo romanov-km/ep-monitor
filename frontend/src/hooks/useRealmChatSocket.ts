@@ -42,7 +42,7 @@ export const useRealmChatSocket = (
       sock.onerror = null;
       sock.onmessage = null;
       sock.onopen = null;
-      
+
       if (
         sock.readyState === WebSocket.OPEN ||
         sock.readyState === WebSocket.CONNECTING
@@ -64,7 +64,7 @@ export const useRealmChatSocket = (
 
   const connect = () => {
     if (!realm || !username) return;
-    
+
     // Проверяем лимит попыток переподключения в самом начале
     if (reconnectAttemptsRef.current >= maxReconnectAttempts) {
       console.error("🚫 Max reconnection attempts reached");
@@ -72,13 +72,13 @@ export const useRealmChatSocket = (
       onError?.("Превышено максимальное количество попыток переподключения");
       return;
     }
-    
+
     // Проверяем, не создаем ли мы уже соединение
     if (socketRef.current && socketRef.current.readyState === WebSocket.CONNECTING) {
       console.log("⚠️ Connection already in progress, skipping...");
       return;
     }
-    
+
     // Если сокет существует, но уже закрыт - очищаем его
     if (socketRef.current && socketRef.current.readyState === WebSocket.CLOSED) {
       console.log("🧹 Cleaning up closed socket");
@@ -101,7 +101,7 @@ export const useRealmChatSocket = (
       reconnectAttemptsRef.current = 0; // Сбрасываем счетчик при успешном подключении
       console.log("✅ WebSocket connected successfully");
       console.log("📤 Sending subscription for realm:", realm, "username:", username);
-      
+
       // Проверяем валидность данных перед отправкой
       if (!username || username.trim() === '') {
         console.error("❌ Cannot subscribe: username is empty");
@@ -109,23 +109,43 @@ export const useRealmChatSocket = (
         safeClose();
         return;
       }
-      
-      const subscribeData = { type: "subscribe", realm, username };
-      socket.send(JSON.stringify(subscribeData));
 
-      // пинги только когда сокет открыт
       pingIntervalRef.current = window.setInterval(() => {
         if (socket.readyState === WebSocket.OPEN) {
-          // Убираем логирование ping для уменьшения спама
           socket.send(JSON.stringify({ type: "ping" }));
+
+          // Устанавливаем таймер ожидания pong
+          if (heartbeatTimeoutRef.current) clearTimeout(heartbeatTimeoutRef.current);
+          heartbeatTimeoutRef.current = window.setTimeout(() => {
+            console.warn("⏰ Heartbeat timeout — no pong received from server.");
+            safeClose(); // Закрываем соединение
+            setIsConnected(false);
+            setConnectionStatus("disconnected");
+
+            // Запускаем реконнект
+            if (!reconnectBlockedRef.current) {
+              reconnectAttemptsRef.current++;
+              setConnectionStatus("reconnecting");
+              const delay = Math.min((options?.reconnectDelay ?? 1000) * Math.pow(2, reconnectAttemptsRef.current - 1), 30000);
+              reconnectTimeoutRef.current = window.setTimeout(() => {
+                reconnectTimeoutRef.current = null;
+                connect();
+              }, delay);
+            }
+          }, 10_000); // 10 сек ждем pong
         }
-      }, options?.pingInterval ?? 35_000); // 35 секунд (было 60_000) - синхронизация с сервером
+      }, options?.pingInterval ?? 35_000);
     };
 
     socket.onmessage = (event) => {
       const data = JSON.parse(event.data);
 
       switch (data.type) {
+        case "pong":
+          // Сбрасываем таймер heartbeat — pong пришёл вовремя
+          clearTimeout(heartbeatTimeoutRef.current!);
+          heartbeatTimeoutRef.current = null;
+          break;
         case "error":
           console.error("Server error:", data.message, "Code:", data.code);
           if (data.code === "duplicate_nick") {
@@ -186,28 +206,28 @@ export const useRealmChatSocket = (
       setIsConnected(false);
       setConnectionStatus('disconnected');
       clearAllTimers();
-      
+
       // Очищаем ссылку на сокет
       socketRef.current = null;
-      
+
       // Не переподключаемся при graceful shutdown сервера
       if (event.code === 1000 && event.reason === 'Server shutdown') {
         console.log("🛑 Server is shutting down, not reconnecting");
         onError?.("Сервер выключается");
         return;
       }
-      
+
       // реконект только если не заблокирован и нет активного таймаута
       if (!reconnectTimeoutRef.current && !reconnectBlockedRef.current) {
         reconnectAttemptsRef.current++;
         setConnectionStatus('reconnecting');
-        
+
         // Экспоненциальная задержка: 1s, 2s, 4s, 8s, 16s, 30s, 30s...
         const baseDelay = options?.reconnectDelay ?? 1000;
         const delay = Math.min(baseDelay * Math.pow(2, reconnectAttemptsRef.current - 1), 30000);
-        
+
         console.log(`🔁 Reconnecting WebSocket... (attempt ${reconnectAttemptsRef.current}/${maxReconnectAttempts}, delay: ${delay}ms)`);
-        
+
         reconnectTimeoutRef.current = window.setTimeout(() => {
           reconnectTimeoutRef.current = null;
           connect();
@@ -218,24 +238,24 @@ export const useRealmChatSocket = (
     socket.onerror = (err) => {
       console.error("🛑 WebSocket error:", err);
       setConnectionStatus('disconnected');
-      
+
       // При ошибке соединения также запускаем переподключение
       if (!reconnectTimeoutRef.current && !reconnectBlockedRef.current) {
         reconnectAttemptsRef.current++;
         setConnectionStatus('reconnecting');
-        
+
         // Экспоненциальная задержка: 1s, 2s, 4s, 8s, 16s, 30s, 30s...
         const baseDelay = options?.reconnectDelay ?? 1000;
         const delay = Math.min(baseDelay * Math.pow(2, reconnectAttemptsRef.current - 1), 30000);
-        
+
         console.log(`🔁 Reconnecting after error... (attempt ${reconnectAttemptsRef.current}/${maxReconnectAttempts}, delay: ${delay}ms)`);
-        
+
         reconnectTimeoutRef.current = window.setTimeout(() => {
           reconnectTimeoutRef.current = null;
           connect();
         }, delay);
       }
-      
+
       safeClose();
     };
   };
@@ -244,18 +264,18 @@ export const useRealmChatSocket = (
     // Очищаем предыдущее соединение
     safeClose();
     clearAllTimers();
-    
+
     // Сбрасываем состояние
     setMessages([]);
     setOnlineUsers([]);
     setUserCount(0);
     setIsConnected(false);
     setConnectionStatus('disconnected');
-    
+
     // Сбрасываем флаги
     reconnectBlockedRef.current = false;
     reconnectAttemptsRef.current = 0;
-    
+
     // Устанавливаем небольшую задержку перед подключением
     const timeoutId = setTimeout(() => {
       connect();
@@ -280,27 +300,27 @@ export const useRealmChatSocket = (
   const manualReconnect = () => {
     // Очищаем все таймауты и интервалы
     clearAllTimers();
-    
+
     // Сбрасываем счетчик попыток
     reconnectAttemptsRef.current = 0;
-    
+
     // Очищаем ссылку на сокет
     socketRef.current = null;
-    
+
     // Сбрасываем флаг блокировки
     reconnectBlockedRef.current = false;
-    
+
     console.log("🔄 Manual reconnect initiated");
     connect();
   };
 
-  return { 
-    messages, 
-    sendMessage, 
-    userCount, 
-    onlineUsers, 
-    isConnected, 
+  return {
+    messages,
+    sendMessage,
+    userCount,
+    onlineUsers,
+    isConnected,
     connectionStatus,
-    manualReconnect 
+    manualReconnect
   };
 };
