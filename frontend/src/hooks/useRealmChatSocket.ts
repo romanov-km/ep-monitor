@@ -26,6 +26,7 @@ export const useRealmChatSocket = (
   const socketRef = useRef<WebSocket | null>(null);
   const reconnectTimeoutRef = useRef<number | null>(null);
   const pingIntervalRef = useRef<number | null>(null);
+  const heartbeatTimeoutRef = useRef<number | null>(null);
   const { onError } = options || {};
   const [isConnected, setIsConnected] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState<'disconnected' | 'connecting' | 'connected' | 'reconnecting'>('disconnected');
@@ -50,6 +51,15 @@ export const useRealmChatSocket = (
       }
     }
     socketRef.current = null;
+  };
+
+  const clearAllTimers = () => {
+    clearInterval(pingIntervalRef.current!);
+    clearTimeout(reconnectTimeoutRef.current!);
+    clearTimeout(heartbeatTimeoutRef.current!);
+    pingIntervalRef.current = null;
+    reconnectTimeoutRef.current = null;
+    heartbeatTimeoutRef.current = null;
   };
 
   const connect = () => {
@@ -80,8 +90,7 @@ export const useRealmChatSocket = (
 
     // Очищаем предыдущее соединение
     safeClose();
-    clearInterval(pingIntervalRef.current!);
-    clearTimeout(reconnectTimeoutRef.current!);
+    clearAllTimers();
 
     const socket = new WebSocket(import.meta.env.VITE_WS_URL);
     socketRef.current = socket;
@@ -138,6 +147,15 @@ export const useRealmChatSocket = (
           // Успешная подписка - сбрасываем флаг блокировки
           reconnectBlockedRef.current = false;
           break;
+        case "heartbeat":
+          // Отвечаем на heartbeat от сервера
+          if (socket.readyState === WebSocket.OPEN) {
+            socket.send(JSON.stringify({ type: "pong" }));
+          }
+          break;
+        case "pong":
+          // Сервер ответил на наш ping
+          break;
       }
     };
 
@@ -145,10 +163,17 @@ export const useRealmChatSocket = (
       console.warn("❌ WebSocket closed", event.code, event.reason);
       setIsConnected(false);
       setConnectionStatus('disconnected');
-      clearInterval(pingIntervalRef.current!);
+      clearAllTimers();
       
       // Очищаем ссылку на сокет
       socketRef.current = null;
+      
+      // Не переподключаемся при graceful shutdown сервера
+      if (event.code === 1000 && event.reason === 'Server shutdown') {
+        console.log("🛑 Server is shutting down, not reconnecting");
+        onError?.("Сервер выключается");
+        return;
+      }
       
       // реконект только если не заблокирован и нет активного таймаута
       if (!reconnectTimeoutRef.current && !reconnectBlockedRef.current) {
@@ -196,8 +221,7 @@ export const useRealmChatSocket = (
   useEffect(() => {
     // Очищаем предыдущее соединение
     safeClose();
-    clearInterval(pingIntervalRef.current!);
-    clearTimeout(reconnectTimeoutRef.current!);
+    clearAllTimers();
     
     // Сбрасываем состояние
     setMessages([]);
@@ -218,8 +242,7 @@ export const useRealmChatSocket = (
     return () => {
       clearTimeout(timeoutId);
       safeClose();
-      clearInterval(pingIntervalRef.current!);
-      clearTimeout(reconnectTimeoutRef.current!);
+      clearAllTimers();
     };
   }, [realm, username]);
 
@@ -234,8 +257,7 @@ export const useRealmChatSocket = (
 
   const manualReconnect = () => {
     // Очищаем все таймауты и интервалы
-    clearTimeout(reconnectTimeoutRef.current!);
-    clearInterval(pingIntervalRef.current!);
+    clearAllTimers();
     
     // Сбрасываем счетчик попыток
     reconnectAttemptsRef.current = 0;
