@@ -93,7 +93,7 @@ wss.on("connection", (ws) => {
     }
   });
 
-  ws.on("close", () => {
+  ws.on("close", (code, reason) => {
     const realm = ws.realm;
     const name  = usernames.get(ws);
     
@@ -105,7 +105,30 @@ wss.on("connection", (ws) => {
       broadcastUserCount(realm);
       broadcastOnlineUsers(realm);
     }
-    console.log("Клиент отключился")
+    
+    // Логируем только если был зарегистрированный пользователь
+    if (name) {
+      console.log(`Клиент отключился: ${name} (код: ${code}, причина: ${reason || 'не указана'})`);
+    }
+  });
+
+  ws.on("error", (error) => {
+    const realm = ws.realm;
+    const name  = usernames.get(ws);
+    
+    usernames.delete(ws);
+    if (name) busyNames.delete(name);
+
+    if (realm && realmClients.has(realm)) {
+      realmClients.get(realm).delete(ws);
+      broadcastUserCount(realm);
+      broadcastOnlineUsers(realm);
+    }
+    
+    // Логируем только если был зарегистрированный пользователь
+    if (name) {
+      console.log(`Клиент отключился с ошибкой: ${name} - ${error.message}`);
+    }
   });
 });
 
@@ -132,6 +155,20 @@ function broadcastOnlineUsers(realm) {
     }
   });
 }
+
+// Периодическая очистка мертвых соединений
+setInterval(() => {
+  wss.clients.forEach((client) => {
+    if (client.readyState !== WebSocket.OPEN) {
+      const name = usernames.get(client);
+      if (name) {
+        busyNames.delete(name);
+        usernames.delete(client);
+        console.log(`Очищен зависший ник: ${name}`);
+      }
+    }
+  });
+}, 30000); // Проверяем каждые 30 секунд
 
 server.listen(PORT, () => {
   console.log(`✅ WebSocket сервер запущен на порту ${PORT}`);
