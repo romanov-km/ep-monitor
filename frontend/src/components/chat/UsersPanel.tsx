@@ -50,7 +50,7 @@ export const UsersPanel: React.FC<UsersPanelProps> = ({
             onClick={() => setExpanded(!expanded)}
             className="underline text-blue-400"
           >
-            {expanded ? "Свернуть список" : `+ ещё ${hidden}`}
+            {expanded ? "Collapse list" : `+ ${hidden} more`}
           </button>
         )}
       </div>
