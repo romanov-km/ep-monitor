@@ -109,6 +109,14 @@ export const useRealmChatSocket = (
         safeClose();
         return;
       }
+      
+      // === ВАЖНО: отправляем subscribe ===
+      socket.send(JSON.stringify({
+        type: "subscribe",
+        realm,
+        username,
+      }));
+
 
       pingIntervalRef.current = window.setInterval(() => {
         if (socket.readyState === WebSocket.OPEN) {
