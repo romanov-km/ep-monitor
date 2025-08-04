@@ -29,8 +29,7 @@ const ENABLE_DDOS_PROTECTION = process.env.ENABLE_DDOS_PROTECTION !== 'false'; /
 
 // Heartbeat механизм
 const clientHeartbeats = new Map();
-const HEARTBEAT_INTERVAL = 35000; // 35 секунд (было 60) - Railway edge-прокси закрывает через ~60с
-const HEARTBEAT_TIMEOUT = 45000; // 45 секунд - клиент должен ответить в течение 10 секунд (было 90/30)
+const HEARTBEAT_INTERVAL = 30000; // 30 секунд (было 60) - Railway edge-прокси закрывает через ~60с
 
 // Дебаунс для логов отключений
 const disconnectLogs = new Map();
@@ -97,22 +96,19 @@ async function gracefulShutdown() {
 
 // Функция для установки heartbeat для клиента
 function setupHeartbeat(ws) {
-  const heartbeatId = setInterval(() => {
-    if (ws.readyState === WebSocket.OPEN) {
-      ws.send(JSON.stringify({ type: "heartbeat" }));
-      
-      // Устанавливаем таймаут для ответа
-      const timeoutId = setTimeout(() => {
-        console.log(`⏰ Heartbeat timeout для ${usernames.get(ws) || 'unknown'} (no response in ${(HEARTBEAT_TIMEOUT - HEARTBEAT_INTERVAL) / 1000}s)`);
-        ws.close(1000, 'Heartbeat timeout');
-      }, HEARTBEAT_TIMEOUT - HEARTBEAT_INTERVAL);
-      
-      // Сохраняем timeout ID для очистки при получении pong
-      ws.heartbeatTimeoutId = timeoutId;
-    }
-  }, HEARTBEAT_INTERVAL);
+    ws.isAlive = true;                 // флаг активности
+    ws.on("pong", () => (ws.isAlive = true));
   
-  clientHeartbeats.set(ws, heartbeatId);
+    const id = setInterval(() => {
+      if (!ws.isAlive) {
+        console.log(`⏰ Heartbeat timeout для ${usernames.get(ws) || "unknown"}`);
+        return ws.terminate();         // мгновенно закрываем
+      }
+      ws.isAlive = false;
+      if (ws.readyState === WebSocket.OPEN) ws.ping(); // отправляем ping-кадр
+    }, HEARTBEAT_INTERVAL);
+  
+    clientHeartbeats.set(ws, id);
 }
 
 // Функция для очистки heartbeat
@@ -181,25 +177,7 @@ wss.on("connection", async (ws, req) => {
   ws.on("message", async (msg) => {
     try {
       const data = JSON.parse(msg);
-      
-      // Логируем только важные сообщения, убираем ping/pong спам
-      if (data.type !== "ping" && data.type !== "pong") {
-        console.log(`📨 Received message from ${usernames.get(ws) || 'unknown'}:`, data.type, data);
-      }
-
-      if (data.type === "ping") {
-        ws.send(JSON.stringify({ type: "pong" }));
-        return;
-      }
-
-      if (data.type === "pong") {
-        // Клиент ответил на heartbeat - очищаем timeout (убираем логирование)
-        if (ws.heartbeatTimeoutId) {
-          clearTimeout(ws.heartbeatTimeoutId);
-          ws.heartbeatTimeoutId = null;
-        }
-        return;
-      }
+      if (data.type === "ping" || data.type === "pong") return; // просто игнорируем
 
       if (data.type === "subscribe") {
         const realm = data.realm;
