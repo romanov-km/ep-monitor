@@ -25,8 +25,6 @@ export const useRealmChatSocket = (
   const [onlineUsers, setOnlineUsers] = useState<string[]>([]);
   const socketRef = useRef<WebSocket | null>(null);
   const reconnectTimeoutRef = useRef<number | null>(null);
-  const pingIntervalRef = useRef<number | null>(null);
-  const heartbeatTimeoutRef = useRef<number | null>(null);
   const { onError } = options || {};
   const [isConnected, setIsConnected] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState<'disconnected' | 'connecting' | 'connected' | 'reconnecting'>('disconnected');
@@ -54,12 +52,7 @@ export const useRealmChatSocket = (
   };
 
   const clearAllTimers = () => {
-    clearInterval(pingIntervalRef.current!);
     clearTimeout(reconnectTimeoutRef.current!);
-    clearTimeout(heartbeatTimeoutRef.current!);
-    pingIntervalRef.current = null;
-    reconnectTimeoutRef.current = null;
-    heartbeatTimeoutRef.current = null;
   };
 
   const connect = () => {
@@ -109,51 +102,19 @@ export const useRealmChatSocket = (
         safeClose();
         return;
       }
-      
+
       // === ВАЖНО: отправляем subscribe ===
       socket.send(JSON.stringify({
         type: "subscribe",
         realm,
         username,
       }));
-
-
-      pingIntervalRef.current = window.setInterval(() => {
-        if (socket.readyState === WebSocket.OPEN) {
-          socket.send(JSON.stringify({ type: "ping" }));
-
-          // Устанавливаем таймер ожидания pong
-          if (heartbeatTimeoutRef.current) clearTimeout(heartbeatTimeoutRef.current);
-          heartbeatTimeoutRef.current = window.setTimeout(() => {
-            console.warn("⏰ Heartbeat timeout — no pong received from server.");
-            safeClose(); // Закрываем соединение
-            setIsConnected(false);
-            setConnectionStatus("disconnected");
-
-            // Запускаем реконнект
-            if (!reconnectBlockedRef.current) {
-              reconnectAttemptsRef.current++;
-              setConnectionStatus("reconnecting");
-              const delay = Math.min((options?.reconnectDelay ?? 1000) * Math.pow(2, reconnectAttemptsRef.current - 1), 30000);
-              reconnectTimeoutRef.current = window.setTimeout(() => {
-                reconnectTimeoutRef.current = null;
-                connect();
-              }, delay);
-            }
-          }, 10_000); // 10 сек ждем pong
-        }
-      }, options?.pingInterval ?? 35_000);
     };
 
     socket.onmessage = (event) => {
       const data = JSON.parse(event.data);
 
       switch (data.type) {
-        case "pong":
-          // Сбрасываем таймер heartbeat — pong пришёл вовремя
-          clearTimeout(heartbeatTimeoutRef.current!);
-          heartbeatTimeoutRef.current = null;
-          break;
         case "error":
           console.error("Server error:", data.message, "Code:", data.code);
           if (data.code === "duplicate_nick") {
@@ -202,9 +163,6 @@ export const useRealmChatSocket = (
           if (socket.readyState === WebSocket.OPEN) {
             socket.send(JSON.stringify({ type: "pong" }));
           }
-          break;
-        case "pong":
-          // Сервер ответил на наш ping (убираем логирование)
           break;
       }
     };

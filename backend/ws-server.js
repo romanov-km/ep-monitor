@@ -96,23 +96,16 @@ async function gracefulShutdown() {
 
 // Функция для установки heartbeat для клиента
 function setupHeartbeat(ws) {
-    ws.isAlive = true;                 // флаг активности
-    ws.on("pong", () => (ws.isAlive = true));
-  
-    const id = setInterval(() => {
-      if (!ws.isAlive) {
-        console.log(`⏰ Heartbeat timeout для ${usernames.get(ws) || "unknown"}`);
-        return ws.terminate();         // мгновенно закрываем
-      }
-      ws.isAlive = false;
-      if (ws.readyState === WebSocket.OPEN) ws.ping(); // отправляем ping-кадр
-    }, HEARTBEAT_INTERVAL);
-  
-    clientHeartbeats.set(ws, id);
+    ws.isAlive = true;
+    
+    ws.on('pong', () => {
+        ws.isAlive = true;
+    });
 }
 
 // Функция для очистки heartbeat
 function clearHeartbeat(ws) {
+  ws.isAlive = false;
   const heartbeatId = clientHeartbeats.get(ws);
   if (heartbeatId) {
     clearInterval(heartbeatId);
@@ -177,7 +170,6 @@ wss.on("connection", async (ws, req) => {
   ws.on("message", async (msg) => {
     try {
       const data = JSON.parse(msg);
-      if (data.type === "ping" || data.type === "pong") return; // просто игнорируем
 
       if (data.type === "subscribe") {
         const realm = data.realm;
@@ -201,23 +193,11 @@ wss.on("connection", async (ws, req) => {
           ws.send(JSON.stringify({
             type: "error",
             code: "invalid_username",
-            message: "Username must be 2-20 characters long.",
+            message: "Username must be 1-200 characters long.",
           }));
           ws.close();
           return;
         }
-
-        //Проверяем на подозрительные паттерны (только цифры, повторяющиеся символы)
-        // if (/^\d+$/.test(username) || /(.)\1{4,}/.test(username)) {
-        //   console.log(`🚫 Bot protection: Suspicious username pattern from IP ${ws.clientIP}: "${username}"`);
-        //   ws.send(JSON.stringify({
-        //     type: "error",
-        //     code: "invalid_username",
-        //     message: "Username pattern not allowed.",
-        //   }));
-        //   ws.close();
-        //   return;
-        // }
 
         // Проверяем защиту от частых переподключений
         const now = Date.now();
@@ -260,7 +240,7 @@ wss.on("connection", async (ws, req) => {
 
         // Отправляем подтверждение успешной подписки
         ws.send(JSON.stringify({ type: "subscribe_success" }));
-        console.log(`✅ Пользователь ${username} подключился к чату ${realm}`);
+        console.log(`✅ Пользователь ${username} подключился к чату ${realm} ${clientIP}`);
 
         // Запускаем heartbeat для этого клиента
         setupHeartbeat(ws);
