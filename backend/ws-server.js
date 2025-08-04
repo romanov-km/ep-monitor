@@ -34,7 +34,6 @@ const HEARTBEAT_INTERVAL = 30000; // 30 секунд (было 60) - Railway edg
 // Дебаунс для логов отключений
 const disconnectLogs = new Map();
 const LOG_DEBOUNCE_TIME = 5000; // 5 секунд
-const FIRST_MSG_TIMEOUT = 5000; // 5 секунд
 
 // Graceful shutdown
 let isShuttingDown = false;
