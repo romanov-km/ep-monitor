@@ -10,6 +10,7 @@ interface SoundSettings {
   realmUp: SoundEvent;
   authUp: SoundEvent;
   chat: SoundEvent;
+  realmDown: SoundEvent;
 }
 
 interface SoundSettingsProps {
@@ -29,76 +30,109 @@ const SoundSettings: React.FC<SoundSettingsProps> = ({
 
   const toggleSettings = () => setOpen((prev) => !prev);
 
-  const updateEvent = (eventType: keyof SoundSettings, updates: Partial<SoundEvent>) => {
-    console.log("SoundSettings: updating", eventType, "with", updates);
-    const newSettings = {
+  /**
+   * Обновляет выбранное событие, гарантируя иммутабельность
+   */
+  const updateEvent = (
+    eventType: keyof SoundSettings,
+    updates: Partial<SoundEvent>
+  ) => {
+    setSoundSettings({
       ...soundSettings,
       [eventType]: {
         ...soundSettings[eventType],
         ...updates,
       },
-    };
-    console.log("SoundSettings: new settings", newSettings);
-    setSoundSettings(newSettings);
+    });
   };
 
+  /**
+   * Список звуков — здесь легко добавить новые.
+   */
   const soundOptions = [
     { value: "levelup", label: "Level Up" },
     { value: "BG", label: "BG" },
-    { value: "70elite", label: "70 Elite" },
+    { value: "70elite", label: "70 Elite" },
     { value: "murloc", label: "Murloc" },
     { value: "newmsg", label: "Chat Message" },
+    { value: "down", label: "Realm Down" },
   ];
 
-  const eventLabels = {
-    realmUp: "Realm Up",
-    authUp: "Auth Server Up", 
-    chat: "Chat Message",
+  const eventLabels: Record<keyof SoundSettings, string> = {
+    realmUp: "Up",
+    realmDown: "Down",
+    authUp: "Auth",
+    chat: "Chat",
+  };
+
+  const eventIcons: Record<keyof SoundSettings, string> = {
+    realmUp: "🟢",
+    realmDown: "🔴",
+    authUp: "🔐",
+    chat: "💬",
   };
 
   return (
-    <div className="flex justify-between items-center bg-black text-white px-4 py-2 border-b border-gray-700 relative">
-      <h2 className="text-lg font-semibold">Project Epoch Realm Status</h2>
+    <div className="flex flex-wrap items-center justify-between bg-black text-white px-4 py-2 border-b border-gray-700">
+      {/* Заголовок */}
+      <h2 className="text-lg font-semibold mr-2 truncate max-w-[150px] sm:max-w-none">
+        Project Epoch Realm Status
+      </h2>
 
-      <div className="flex items-center space-x-4">
-        <div className="flex items-center space-x-2">
-          {Object.entries(soundSettings).map(([key, event]) => (
-            <label key={key} className="flex items-center space-x-1 cursor-pointer text-xs">
-              <span>{eventLabels[key as keyof SoundSettings]}</span>
-              <input
-                type="checkbox"
-                checked={event.enabled}
-                onChange={() => updateEvent(key as keyof SoundSettings, { enabled: !event.enabled })}
-                className="form-checkbox h-3 w-3"
-              />
-            </label>
-          ))}
-        </div>
+      {/* Кнопки-индикаторы без горизонтального скрола */}
+      <div className="flex flex-wrap gap-1 max-w-full sm:max-w-none">
+        {(Object.keys(soundSettings) as (keyof SoundSettings)[]).map((key) => {
+          const event = soundSettings[key];
+          return (
+            <button
+              key={key}
+              onClick={() =>
+                updateEvent(key, {
+                  enabled: !soundSettings[key].enabled,
+                })
+              }
+              className={`flex items-center text-xs px-2 py-1 rounded select-none transition-colors
+                ${event.enabled ? "bg-green-600 hover:bg-green-500" : "bg-gray-800 hover:bg-gray-700"}`}
+              title={eventLabels[key]}
+            >
+              {eventIcons[key]} {eventLabels[key]}
+            </button>
+          );
+        })}
+      </div>
 
-        <div className="relative">
-          <button onClick={toggleSettings} className="text-xl">
-            ⚙️
-          </button>
+      {/* Кнопка настроек */}
+      <div className="relative ml-2 sm:ml-4">
+        <button onClick={toggleSettings} className="text-xl focus:outline-none">
+          ⚙️
+        </button>
 
-          {open && (
-            <div className="absolute right-0 mt-2 w-80 bg-gray-900 border border-gray-600 text-sm p-4 rounded shadow-lg z-50">
-              {Object.entries(soundSettings).map(([key, event]) => (
+        {/* Панель настроек */}
+        {open && (
+          <div className="absolute right-0 mt-2 w-72 sm:w-80 max-w-[calc(100vw-1rem)] bg-gray-900 border border-gray-600 text-sm p-4 rounded shadow-lg z-50 overflow-y-auto max-h-[80vh]">
+            {(Object.keys(soundSettings) as (keyof SoundSettings)[]).map((key) => {
+              const event = soundSettings[key];
+              return (
                 <div key={key} className="mb-4 p-3 border border-gray-700 rounded">
-                  <div className="flex items-center justify-between mb-2">
-                    <label className="font-semibold text-white">
-                      {eventLabels[key as keyof SoundSettings]}
-                    </label>
-                    <input
-                      type="checkbox"
-                      checked={event.enabled}
-                      onChange={() => updateEvent(key as keyof SoundSettings, { enabled: !event.enabled })}
-                      className="form-checkbox h-4 w-4"
-                    />
-                  </div>
-                  
+                  {/* Заголовок события с переключателем */}
+                  <button
+                    onClick={() =>
+                      updateEvent(key, {
+                        enabled: !soundSettings[key].enabled,
+                      })
+                    }
+                    className={`w-full flex justify-between items-center px-2 py-1 rounded text-sm font-semibold transition-colors
+                      ${event.enabled ? "bg-green-600 hover:bg-green-500" : "bg-gray-800 hover:bg-gray-700"}`}
+                  >
+                    <span>{eventLabels[key]}</span>
+                    <span>{event.enabled ? "ON" : "OFF"}</span>
+                  </button>
+
+                  {/* Детали, показываем только если включено */}
                   {event.enabled && (
-                    <>
-                      <label className="block mb-2 text-xs">
+                    <div className="mt-3 space-y-3">
+                      {/* Громкость */}
+                      <label className="block text-xs">
                         Volume ({Math.round(event.volume * 100)}%)
                         <input
                           type="range"
@@ -106,19 +140,28 @@ const SoundSettings: React.FC<SoundSettingsProps> = ({
                           max={1}
                           step={0.01}
                           value={event.volume}
-                          onChange={(e) => updateEvent(key as keyof SoundSettings, { volume: Number(e.target.value) })}
+                          onChange={(e) =>
+                            updateEvent(key, {
+                              volume: Number(e.target.value),
+                            })
+                          }
                           className="w-full"
                         />
                       </label>
 
-                      <label className="block mb-2 text-xs">
+                      {/* Тип звука */}
+                      <label className="block text-xs">
                         Sound Type
                         <select
                           value={event.soundType}
-                          onChange={(e) => updateEvent(key as keyof SoundSettings, { soundType: e.target.value })}
+                          onChange={(e) =>
+                            updateEvent(key, {
+                              soundType: e.target.value,
+                            })
+                          }
                           className="w-full bg-gray-800 text-white border border-gray-600 px-2 py-1 mt-1 text-xs"
                         >
-                          {soundOptions.map(option => (
+                          {soundOptions.map((option) => (
                             <option key={option.value} value={option.value}>
                               {option.label}
                             </option>
@@ -126,28 +169,30 @@ const SoundSettings: React.FC<SoundSettingsProps> = ({
                         </select>
                       </label>
 
+                      {/* Тест */}
                       <button
-                        onClick={() => playTestSound(key as keyof SoundSettings)}
-                        className="text-blue-400 text-xs mt-1 hover:text-blue-300"
+                        onClick={() => playTestSound(key)}
+                        className="text-blue-400 text-xs hover:text-blue-300"
                       >
                         🔊 Test Sound
                       </button>
-                    </>
+                    </div>
                   )}
                 </div>
-              ))}
+              );
+            })}
 
-              <div className="border-t border-gray-700 pt-2">
-                <button
-                  onClick={stopSound}
-                  className="text-red-400 text-xs hover:text-red-300"
-                >
-                  ⏹️ Stop All Sounds
-                </button>
-              </div>
+            {/* Глобальная остановка */}
+            <div className="border-t border-gray-700 pt-2">
+              <button
+                onClick={stopSound}
+                className="text-red-400 text-xs hover:text-red-300"
+              >
+                ⏹️ Stop All Sounds
+              </button>
             </div>
-          )}
-        </div>
+          </div>
+        )}
       </div>
     </div>
   );

@@ -33,6 +33,7 @@ interface AppSoundSettings {
   realmUp: SoundEvent;
   authUp: SoundEvent;
   chat: SoundEvent;
+  realmDown: SoundEvent;
 }
 
 const API_BASE = import.meta.env.VITE_API_BASE;
@@ -50,13 +51,23 @@ function App() {
   const [soundSettings, setSoundSettings] = useState<AppSoundSettings>(() => {
     const saved = localStorage.getItem("soundSettings");
     if (saved) {
-      return JSON.parse(saved);
+      const parsed = JSON.parse(saved);
+      // Проверяем, есть ли realmDown в старых настройках
+      if (!parsed.realmDown) {
+        console.log("Adding missing realmDown setting to old config");
+        parsed.realmDown = { enabled: true, soundType: "down", volume: 1 };
+      }
+      console.log("Loaded sound settings:", parsed);
+      return parsed;
     }
-    return {
+    const defaultSettings = {
       realmUp: { enabled: true, soundType: "70elite", volume: 1 },
       authUp: { enabled: true, soundType: "levelup", volume: 1 },
       chat: { enabled: true, soundType: "newmsg", volume: 0.6 },
+      realmDown: { enabled: true, soundType: "down", volume: 1 },
     };
+    console.log("Using default sound settings:", defaultSettings);
+    return defaultSettings;
   });
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -81,7 +92,9 @@ function App() {
   });
 
   // Состояние для отслеживания взаимодействия пользователя с страницей
-  const [userInteracted, setUserInteracted] = useState(false);
+  const [userInteracted, setUserInteracted] = useState(() => {
+    return localStorage.getItem("userInteracted") === "true";
+  });
 
   const handleUsernameSubmit = (name: string) => {
     localStorage.setItem("username", name);
@@ -93,6 +106,7 @@ function App() {
   const playSound = (eventType: keyof AppSoundSettings) => {
     const event = soundSettings[eventType];
     console.log(`Playing sound for ${eventType}:`, event);
+    
     if (!event.enabled) {
       console.log(`Sound ${eventType} is disabled`);
       return;
@@ -144,6 +158,7 @@ function App() {
   // Сохраняем настройки звука в localStorage
   useEffect(() => {
     localStorage.setItem("soundSettings", JSON.stringify(soundSettings));
+    console.log("Sound settings updated:", soundSettings);
   }, [soundSettings]);
 
   // Отслеживаем взаимодействие пользователя с страницей
@@ -152,6 +167,7 @@ function App() {
       if (!userInteracted) {
         console.log("👆 User interacted with page, audio enabled");
         setUserInteracted(true);
+        localStorage.setItem("userInteracted", "true");
       }
     };
 
@@ -183,7 +199,7 @@ function App() {
     };
 
     // Слушаем изменения localStorage из других вкладок
-    window.addEventListener("storage", handleStorageChange);
+    // window.addEventListener("storage", handleStorageChange);
 
     // Также проверяем localStorage периодически для изменений в той же вкладке
     const interval = setInterval(() => {
@@ -219,13 +235,18 @@ function App() {
           playSound("realmUp");
         }
 
+        // Если сервер упал
+        if (prev === true && !isUp) {
+          playSound("realmDown");
+        }
+
         // Сохраняем текущее состояние
         prevStatusesRef.current[realm.name] = isUp;
       });
     });
 
     return () => dispose();
-  }, [soundSettings.realmUp]);
+  }, [soundSettings.realmUp, soundSettings.realmDown]);
 
   // Отслеживаем изменение статуса Auth сервера
   useEffect(() => {
@@ -292,7 +313,7 @@ function App() {
   }, []);
 
   return (
-    <div className="p-4 font-mono">
+    <div className="p-4 font-mono max-w-screen-lg mx-auto">
       <SoundSettings
         soundSettings={soundSettings}
         setSoundSettings={setSoundSettings}
