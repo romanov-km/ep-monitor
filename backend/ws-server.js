@@ -34,6 +34,7 @@ const HEARTBEAT_INTERVAL = 30000; // 30 секунд (было 60) - Railway edg
 // Дебаунс для логов отключений
 const disconnectLogs = new Map();
 const LOG_DEBOUNCE_TIME = 5000; // 5 секунд
+const FIRST_MSG_TIMEOUT = 5000; // 5 секунд
 
 // Graceful shutdown
 let isShuttingDown = false;
@@ -207,17 +208,17 @@ wss.on("connection", async (ws, req) => {
           return;
         }
 
-        // Проверяем на подозрительные паттерны (только цифры, повторяющиеся символы)
-        if (/^\d+$/.test(username) || /(.)\1{4,}/.test(username)) {
-          console.log(`🚫 Bot protection: Suspicious username pattern from IP ${ws.clientIP}: "${username}"`);
-          ws.send(JSON.stringify({
-            type: "error",
-            code: "invalid_username",
-            message: "Username pattern not allowed.",
-          }));
-          ws.close();
-          return;
-        }
+        //Проверяем на подозрительные паттерны (только цифры, повторяющиеся символы)
+        // if (/^\d+$/.test(username) || /(.)\1{4,}/.test(username)) {
+        //   console.log(`🚫 Bot protection: Suspicious username pattern from IP ${ws.clientIP}: "${username}"`);
+        //   ws.send(JSON.stringify({
+        //     type: "error",
+        //     code: "invalid_username",
+        //     message: "Username pattern not allowed.",
+        //   }));
+        //   ws.close();
+        //   return;
+        // }
 
         // Проверяем защиту от частых переподключений
         const now = Date.now();
