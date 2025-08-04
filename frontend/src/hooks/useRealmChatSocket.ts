@@ -101,7 +101,18 @@ export const useRealmChatSocket = (
       reconnectAttemptsRef.current = 0; // Сбрасываем счетчик при успешном подключении
       console.log("✅ WebSocket connected successfully");
       console.log("📤 Sending subscription for realm:", realm, "username:", username);
-      socket.send(JSON.stringify({ type: "subscribe", realm, username }));
+      
+      // Проверяем валидность данных перед отправкой
+      if (!username || username.trim() === '') {
+        console.error("❌ Cannot subscribe: username is empty");
+        onError?.("Username is required");
+        safeClose();
+        return;
+      }
+      
+      const subscribeData = { type: "subscribe", realm, username };
+      console.log("📤 Subscribe data:", subscribeData);
+      socket.send(JSON.stringify(subscribeData));
 
       // пинги только когда сокет открыт
       pingIntervalRef.current = window.setInterval(() => {
@@ -133,6 +144,10 @@ export const useRealmChatSocket = (
               onError?.(data.message);
               safeClose();
             }, 3000); // 3 секунды задержки
+          } else if (data.code === "invalid_username") {
+            console.error("❌ Invalid username error:", data.message);
+            onError?.(data.message);
+            safeClose();
           } else {
             onError?.(data.message);
             safeClose();

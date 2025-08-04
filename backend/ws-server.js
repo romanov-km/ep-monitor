@@ -20,6 +20,12 @@ const busyNames = new Set();
 const recentConnections = new Map(); // username -> timestamp
 const CONNECTION_COOLDOWN = 2000; // 2 секунды между подключениями
 
+// Защита от DDoS атак
+const connectionAttempts = new Map(); // IP -> { count, firstAttempt }
+const MAX_CONNECTIONS_PER_IP = 5; // Максимум 5 подключений с одного IP
+const CONNECTION_WINDOW = 60000; // За 1 минуту
+const MAX_CONNECTION_RATE = 10; // Максимум 10 попыток подключения в минуту
+
 // Heartbeat механизм
 const clientHeartbeats = new Map();
 const HEARTBEAT_INTERVAL = 60000; // 60 секунд (было 30)
@@ -34,6 +40,15 @@ let isShuttingDown = false;
 
 process.on('SIGTERM', gracefulShutdown);
 process.on('SIGINT', gracefulShutdown);
+
+// Функция для получения IP адреса
+function getClientIP(ws) {
+  const req = ws._socket?.server?.request;
+  return req?.connection?.remoteAddress || 
+         req?.headers?.['x-forwarded-for']?.split(',')[0] || 
+         req?.headers?.['x-real-ip'] || 
+         'unknown';
+}
 
 async function gracefulShutdown() {
   console.log('🛑 Начинаем graceful shutdown...');
@@ -108,11 +123,49 @@ function clearHeartbeat(ws) {
 }
 
 wss.on("connection", (ws) => {
-  console.log("🔌 Новое подключение");
+  const clientIP = getClientIP(ws);
+  console.log(`🔌 Новое подключение с IP: ${clientIP}`);
+  
+  // Проверяем DDoS защиту
+  const now = Date.now();
+  const attempts = connectionAttempts.get(clientIP) || { count: 0, firstAttempt: now };
+  
+  // Сбрасываем счетчик если прошло больше минуты
+  if (now - attempts.firstAttempt > CONNECTION_WINDOW) {
+    attempts.count = 0;
+    attempts.firstAttempt = now;
+  }
+  
+  attempts.count++;
+  connectionAttempts.set(clientIP, attempts);
+  
+  // Проверяем лимиты
+  if (attempts.count > MAX_CONNECTION_RATE) {
+    console.log(`🚫 DDoS protection: Too many connection attempts from ${clientIP} (${attempts.count} in ${Math.round((now - attempts.firstAttempt) / 1000)}s)`);
+    ws.close(1008, 'Rate limit exceeded');
+    return;
+  }
+  
+  // Подсчитываем активные соединения с этого IP
+  let activeConnectionsFromIP = 0;
+  wss.clients.forEach(client => {
+    if (getClientIP(client) === clientIP && client.readyState === WebSocket.OPEN) {
+      activeConnectionsFromIP++;
+    }
+  });
+  
+  if (activeConnectionsFromIP >= MAX_CONNECTIONS_PER_IP) {
+    console.log(`🚫 DDoS protection: Too many active connections from ${clientIP} (${activeConnectionsFromIP})`);
+    ws.close(1008, 'Too many connections');
+    return;
+  }
   
   ws.on("message", async (msg) => {
     try {
       const data = JSON.parse(msg);
+      
+      // Логируем все входящие сообщения для диагностики
+      console.log(`📨 Received message from ${usernames.get(ws) || 'unknown'}:`, data.type, data);
 
       if (data.type === "ping") {
         ws.send(JSON.stringify({ type: "pong" }));
@@ -133,6 +186,43 @@ wss.on("connection", (ws) => {
       if (data.type === "subscribe") {
         const realm = data.realm;
         const username = data.username;
+
+        // Проверяем валидность данных
+        if (!username || username.trim() === '') {
+          console.error("❌ Invalid subscribe data:", { realm, username, data });
+          console.log(`🚫 Bot protection: Empty username from IP ${getClientIP(ws)}`);
+          ws.send(JSON.stringify({
+            type: "error",
+            code: "invalid_username",
+            message: "Username is required.",
+          }));
+          ws.close();
+          return;
+        }
+
+        // Дополнительная защита от ботов - проверяем длину и символы username
+        if (username.length < 1 || username.length > 200) {
+          console.log(`🚫 Bot protection: Invalid username length from IP ${getClientIP(ws)}: "${username}"`);
+          ws.send(JSON.stringify({
+            type: "error",
+            code: "invalid_username",
+            message: "Username must be 2-20 characters long.",
+          }));
+          ws.close();
+          return;
+        }
+
+        // Проверяем на подозрительные паттерны (только цифры, повторяющиеся символы)
+        if (/^\d+$/.test(username) || /(.)\1{4,}/.test(username)) {
+          console.log(`🚫 Bot protection: Suspicious username pattern from IP ${getClientIP(ws)}: "${username}"`);
+          ws.send(JSON.stringify({
+            type: "error",
+            code: "invalid_username",
+            message: "Username pattern not allowed.",
+          }));
+          ws.close();
+          return;
+        }
 
         // Проверяем защиту от частых переподключений
         const now = Date.now();
@@ -308,6 +398,13 @@ setInterval(() => {
   for (const [username, timestamp] of recentConnections.entries()) {
     if (now - timestamp > 60000) {
       recentConnections.delete(username);
+    }
+  }
+  
+  // Очищаем старые записи о попытках подключения (старше 2 минут)
+  for (const [ip, attempts] of connectionAttempts.entries()) {
+    if (now - attempts.firstAttempt > 120000) {
+      connectionAttempts.delete(ip);
     }
   }
   
