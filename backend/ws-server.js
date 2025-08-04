@@ -16,10 +16,14 @@ const realmClients = new Map();
 const usernames = new Map();
 const busyNames = new Set();
 
+// Защита от частых переподключений
+const recentConnections = new Map(); // username -> timestamp
+const CONNECTION_COOLDOWN = 2000; // 2 секунды между подключениями
+
 // Heartbeat механизм
 const clientHeartbeats = new Map();
-const HEARTBEAT_INTERVAL = 30000; // 30 секунд
-const HEARTBEAT_TIMEOUT = 45000; // 45 секунд - клиент должен ответить в течение 15 секунд
+const HEARTBEAT_INTERVAL = 60000; // 60 секунд (было 30)
+const HEARTBEAT_TIMEOUT = 90000; // 90 секунд - клиент должен ответить в течение 30 секунд (было 45/15)
 
 // Дебаунс для логов отключений
 const disconnectLogs = new Map();
@@ -71,11 +75,13 @@ async function gracefulShutdown() {
 function setupHeartbeat(ws) {
   const heartbeatId = setInterval(() => {
     if (ws.readyState === WebSocket.OPEN) {
+      const username = usernames.get(ws);
+      console.log(`💓 Sending heartbeat to ${username || 'unknown'}`);
       ws.send(JSON.stringify({ type: "heartbeat" }));
       
       // Устанавливаем таймаут для ответа
       const timeoutId = setTimeout(() => {
-        console.log(`⏰ Heartbeat timeout для ${usernames.get(ws) || 'unknown'}`);
+        console.log(`⏰ Heartbeat timeout для ${usernames.get(ws) || 'unknown'} (no response in ${(HEARTBEAT_TIMEOUT - HEARTBEAT_INTERVAL) / 1000}s)`);
         ws.close(1000, 'Heartbeat timeout');
       }, HEARTBEAT_TIMEOUT - HEARTBEAT_INTERVAL);
       
@@ -115,6 +121,8 @@ wss.on("connection", (ws) => {
 
       if (data.type === "pong") {
         // Клиент ответил на heartbeat - очищаем timeout
+        const username = usernames.get(ws);
+        console.log(`💓 Received pong from ${username || 'unknown'}`);
         if (ws.heartbeatTimeoutId) {
           clearTimeout(ws.heartbeatTimeoutId);
           ws.heartbeatTimeoutId = null;
@@ -125,6 +133,21 @@ wss.on("connection", (ws) => {
       if (data.type === "subscribe") {
         const realm = data.realm;
         const username = data.username;
+
+        // Проверяем защиту от частых переподключений
+        const now = Date.now();
+        const lastConnection = recentConnections.get(username);
+        if (lastConnection && (now - lastConnection) < CONNECTION_COOLDOWN) {
+          console.log(`🚫 Blocking rapid reconnection for ${username} (${now - lastConnection}ms since last)`);
+          ws.send(JSON.stringify({
+            type: "error",
+            code: "rapid_reconnect",
+            message: "Please wait before reconnecting.",
+          }));
+          ws.close();
+          return;
+        }
+        recentConnections.set(username, now);
 
         if (busyNames.has(username)) {
           ws.send(JSON.stringify({
@@ -279,6 +302,14 @@ function broadcastOnlineUsers(realm) {
 // Периодическая очистка мертвых соединений
 setInterval(() => {
   if (isShuttingDown) return; // Не очищаем во время shutdown
+  
+  // Очищаем старые записи о подключениях (старше 1 минуты)
+  const now = Date.now();
+  for (const [username, timestamp] of recentConnections.entries()) {
+    if (now - timestamp > 60000) {
+      recentConnections.delete(username);
+    }
+  }
   
   wss.clients.forEach((client) => {
     if (client.readyState !== WebSocket.OPEN) {

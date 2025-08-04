@@ -171,6 +171,9 @@ const RealmChat: React.FC<RealmChatProps> = observer(
             >
               Reconnect
             </button>
+            <span className="text-xs text-yellow-500">
+              💡 Tip: Don't refresh the page frequently
+            </span>
           </div>
         )}
 

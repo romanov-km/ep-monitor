@@ -106,9 +106,10 @@ export const useRealmChatSocket = (
       // пинги только когда сокет открыт
       pingIntervalRef.current = window.setInterval(() => {
         if (socket.readyState === WebSocket.OPEN) {
+          console.log("💓 Sending ping to server");
           socket.send(JSON.stringify({ type: "ping" }));
         }
-      }, options?.pingInterval ?? 30_000);
+      }, options?.pingInterval ?? 60_000); // 60 секунд (было 30_000)
     };
 
     socket.onmessage = (event) => {
@@ -125,6 +126,13 @@ export const useRealmChatSocket = (
               onError?.(data.message);
               safeClose();
             }, 2000); // Увеличиваем с 100ms до 2000ms
+          } else if (data.code === "rapid_reconnect") {
+            console.warn("🚫 Rapid reconnection detected, adding delay");
+            // Добавляем задержку при частых переподключениях
+            setTimeout(() => {
+              onError?.(data.message);
+              safeClose();
+            }, 3000); // 3 секунды задержки
           } else {
             onError?.(data.message);
             safeClose();
@@ -149,12 +157,14 @@ export const useRealmChatSocket = (
           break;
         case "heartbeat":
           // Отвечаем на heartbeat от сервера
+          console.log("💓 Received heartbeat from server, sending pong");
           if (socket.readyState === WebSocket.OPEN) {
             socket.send(JSON.stringify({ type: "pong" }));
           }
           break;
         case "pong":
           // Сервер ответил на наш ping
+          console.log("💓 Received pong from server");
           break;
       }
     };
