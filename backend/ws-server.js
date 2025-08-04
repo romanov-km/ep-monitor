@@ -29,8 +29,8 @@ const ENABLE_DDOS_PROTECTION = process.env.ENABLE_DDOS_PROTECTION !== 'false'; /
 
 // Heartbeat механизм
 const clientHeartbeats = new Map();
-const HEARTBEAT_INTERVAL = 60000; // 60 секунд (было 30)
-const HEARTBEAT_TIMEOUT = 90000; // 90 секунд - клиент должен ответить в течение 30 секунд (было 45/15)
+const HEARTBEAT_INTERVAL = 35000; // 35 секунд (было 60) - Railway edge-прокси закрывает через ~60с
+const HEARTBEAT_TIMEOUT = 45000; // 45 секунд - клиент должен ответить в течение 10 секунд (было 90/30)
 
 // Дебаунс для логов отключений
 const disconnectLogs = new Map();
@@ -42,29 +42,21 @@ let isShuttingDown = false;
 process.on('SIGTERM', gracefulShutdown);
 process.on('SIGINT', gracefulShutdown);
 
-// Функция для получения IP адреса
-function getClientIP(ws) {
-  // Для Vercel и других прокси
-  const req = ws._socket?.server?.request;
-  const forwardedFor = req?.headers?.['x-forwarded-for'];
-  const realIP = req?.headers?.['x-real-ip'];
-  const remoteAddr = req?.connection?.remoteAddress;
-  
-  if (forwardedFor) {
-    return forwardedFor.split(',')[0].trim();
-  }
-  if (realIP) {
-    return realIP;
-  }
-  if (remoteAddr) {
-    return remoteAddr;
+// Функция для получения IP адреса из HTTP запроса
+function getClientIP(req) {
+  // 1. Берём X-Forwarded-For, если есть (Railway пишет клиента последним)
+  const xff = req.headers["x-forwarded-for"];
+  if (xff) {
+    // Railway пишет клиента последним ⇒ берём right-most
+    return xff.split(",").pop().trim();
   }
   
-  // Fallback - используем случайный ID для каждого соединения
-  if (!ws._connectionId) {
-    ws._connectionId = Math.random().toString(36).substr(2, 9);
-  }
-  return `conn_${ws._connectionId}`;
+  // 2. Fallback – X-Real-IP
+  const xri = req.headers["x-real-ip"];
+  if (xri) return xri.trim();
+  
+  // 3. Совсем крайний случай – адрес прокси
+  return req.socket.remoteAddress ?? "unknown";
 }
 
 async function gracefulShutdown() {
@@ -107,8 +99,6 @@ async function gracefulShutdown() {
 function setupHeartbeat(ws) {
   const heartbeatId = setInterval(() => {
     if (ws.readyState === WebSocket.OPEN) {
-      const username = usernames.get(ws);
-      console.log(`💓 Sending heartbeat to ${username || 'unknown'}`);
       ws.send(JSON.stringify({ type: "heartbeat" }));
       
       // Устанавливаем таймаут для ответа
@@ -139,9 +129,12 @@ function clearHeartbeat(ws) {
   }
 }
 
-wss.on("connection", async (ws) => {
-  const clientIP = getClientIP(ws);
+wss.on("connection", async (ws, req) => {
+  const clientIP = getClientIP(req);
   console.log(`🔌 Новое подключение с IP: ${clientIP}`);
+  
+  // Сохраняем IP в объекте соединения для дальнейшего использования
+  ws.clientIP = clientIP;
   
   // Проверяем DDoS защиту только если включена
   if (ENABLE_DDOS_PROTECTION) {
@@ -167,7 +160,7 @@ wss.on("connection", async (ws) => {
     // Подсчитываем активные соединения с этого IP
     let activeConnectionsFromIP = 0;
     wss.clients.forEach(client => {
-      if (getClientIP(client) === clientIP && client.readyState === WebSocket.OPEN) {
+      if (client.clientIP === clientIP && client.readyState === WebSocket.OPEN) {
         activeConnectionsFromIP++;
       }
     });
@@ -189,8 +182,10 @@ wss.on("connection", async (ws) => {
     try {
       const data = JSON.parse(msg);
       
-      // Логируем все входящие сообщения для диагностики
-      console.log(`📨 Received message from ${usernames.get(ws) || 'unknown'}:`, data.type, data);
+      // Логируем только важные сообщения, убираем ping/pong спам
+      if (data.type !== "ping" && data.type !== "pong") {
+        console.log(`📨 Received message from ${usernames.get(ws) || 'unknown'}:`, data.type, data);
+      }
 
       if (data.type === "ping") {
         ws.send(JSON.stringify({ type: "pong" }));
@@ -198,9 +193,7 @@ wss.on("connection", async (ws) => {
       }
 
       if (data.type === "pong") {
-        // Клиент ответил на heartbeat - очищаем timeout
-        const username = usernames.get(ws);
-        console.log(`💓 Received pong from ${username || 'unknown'}`);
+        // Клиент ответил на heartbeat - очищаем timeout (убираем логирование)
         if (ws.heartbeatTimeoutId) {
           clearTimeout(ws.heartbeatTimeoutId);
           ws.heartbeatTimeoutId = null;
@@ -214,8 +207,7 @@ wss.on("connection", async (ws) => {
 
         // Проверяем валидность данных
         if (!username || username.trim() === '') {
-          console.error("❌ Invalid subscribe data:", { realm, username, data });
-          console.log(`🚫 Bot protection: Empty username from IP ${getClientIP(ws)}`);
+          // Убираем детальное логирование для уменьшения спама
           ws.send(JSON.stringify({
             type: "error",
             code: "invalid_username",
@@ -227,7 +219,7 @@ wss.on("connection", async (ws) => {
 
         // Дополнительная защита от ботов - проверяем длину и символы username
         if (username.length < 1 || username.length > 200) {
-          console.log(`🚫 Bot protection: Invalid username length from IP ${getClientIP(ws)}: "${username}"`);
+          console.log(`🚫 Bot protection: Invalid username length from IP ${ws.clientIP}: "${username}"`);
           ws.send(JSON.stringify({
             type: "error",
             code: "invalid_username",
@@ -239,7 +231,7 @@ wss.on("connection", async (ws) => {
 
         // Проверяем на подозрительные паттерны (только цифры, повторяющиеся символы)
         if (/^\d+$/.test(username) || /(.)\1{4,}/.test(username)) {
-          console.log(`🚫 Bot protection: Suspicious username pattern from IP ${getClientIP(ws)}: "${username}"`);
+          console.log(`🚫 Bot protection: Suspicious username pattern from IP ${ws.clientIP}: "${username}"`);
           ws.send(JSON.stringify({
             type: "error",
             code: "invalid_username",

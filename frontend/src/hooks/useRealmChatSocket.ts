@@ -111,16 +111,15 @@ export const useRealmChatSocket = (
       }
       
       const subscribeData = { type: "subscribe", realm, username };
-      console.log("📤 Subscribe data:", subscribeData);
       socket.send(JSON.stringify(subscribeData));
 
       // пинги только когда сокет открыт
       pingIntervalRef.current = window.setInterval(() => {
         if (socket.readyState === WebSocket.OPEN) {
-          console.log("💓 Sending ping to server");
+          // Убираем логирование ping для уменьшения спама
           socket.send(JSON.stringify({ type: "ping" }));
         }
-      }, options?.pingInterval ?? 60_000); // 60 секунд (было 30_000)
+      }, options?.pingInterval ?? 35_000); // 35 секунд (было 60_000) - синхронизация с сервером
     };
 
     socket.onmessage = (event) => {
@@ -171,15 +170,13 @@ export const useRealmChatSocket = (
           reconnectBlockedRef.current = false;
           break;
         case "heartbeat":
-          // Отвечаем на heartbeat от сервера
-          console.log("💓 Received heartbeat from server, sending pong");
+          // Отвечаем на heartbeat от сервера (убираем логирование)
           if (socket.readyState === WebSocket.OPEN) {
             socket.send(JSON.stringify({ type: "pong" }));
           }
           break;
         case "pong":
-          // Сервер ответил на наш ping
-          console.log("💓 Received pong from server");
+          // Сервер ответил на наш ping (убираем логирование)
           break;
       }
     };
