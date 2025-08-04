@@ -26,27 +26,27 @@ PORT = 3724
 CHECK_INTERVAL = 60
 LAST_UPDATE_ID = 0
 
-#ns3200144.ip-198-244-165.eu ns31480980.ip-198-244-179
+#ns3200144.ip-198-244-165.eu ns31480980.ip-198-244-179 51.77.108.104 51.89.175.47
 
 REALMS = [
     {
         "name": "Kezan PVE (Debian Linux)",
-        "host": "51.77.108.104",
+        "host": "game.project-epoch.net",
         "port": 8085,
     },
     {
         "name": "Gurubashi PVP (Debian Linux)",
-        "host": "51.89.175.47",
-        "port": 8085,
+        "host": "game.project-epoch.net",
+        "port": 8086,
     },
     {
         "name": "Kezan PVE (Windows old)",
-        "host": "game.project-epoch.net",
+        "host": "ns3200144.ip-198-244-165.eu",
         "port": 8085,
     },
     {
         "name": "Gurubashi PVP (Windows old)",
-        "host": "game.project-epoch.net",
+        "host": "ns3200144.ip-198-244-165.eu",
         "port": 8086,
     },
 ]
