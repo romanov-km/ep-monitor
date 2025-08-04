@@ -1,71 +1,31 @@
+import { observer } from "mobx-react-lite";
 import React, { useState } from "react";
+import { soundStore } from "../stores/soundStore";
 
-interface SoundEvent {
-  enabled: boolean;
-  soundType: string;
-  volume: number;
-}
+const SoundSettings: React.FC = observer(() => {
 
-interface SoundSettings {
-  realmUp: SoundEvent;
-  authUp: SoundEvent;
-  chat: SoundEvent;
-  realmDown: SoundEvent;
-}
-
-interface SoundSettingsProps {
-  soundSettings: SoundSettings;
-  setSoundSettings: (settings: SoundSettings) => void;
-  playTestSound: (eventType: keyof SoundSettings) => void;
-  stopSound: () => void;
-}
-
-const SoundSettings: React.FC<SoundSettingsProps> = ({
-  soundSettings,
-  setSoundSettings,
-  playTestSound,
-  stopSound,
-}) => {
+  const { soundSettings } = soundStore;
   const [open, setOpen] = useState(false);
 
   const toggleSettings = () => setOpen((prev) => !prev);
 
-  /**
-   * Обновляет выбранное событие, гарантируя иммутабельность
-   */
-  const updateEvent = (
-    eventType: keyof SoundSettings,
-    updates: Partial<SoundEvent>
-  ) => {
-    setSoundSettings({
-      ...soundSettings,
-      [eventType]: {
-        ...soundSettings[eventType],
-        ...updates,
-      },
-    });
-  };
-
-  /**
-   * Список звуков — здесь легко добавить новые.
-   */
   const soundOptions = [
     { value: "levelup", label: "Level Up" },
     { value: "BG", label: "BG" },
-    { value: "70elite", label: "70 Elite" },
+    { value: "70elite", label: "70 Elite" },
     { value: "murloc", label: "Murloc" },
     { value: "newmsg", label: "Chat Message" },
     { value: "down", label: "Realm Down" },
   ];
 
-  const eventLabels: Record<keyof SoundSettings, string> = {
+  const eventLabels: Record<keyof typeof soundSettings, string> = {
     realmUp: "Up",
     realmDown: "Down",
     authUp: "Auth",
     chat: "Chat",
   };
 
-  const eventIcons: Record<keyof SoundSettings, string> = {
+  const eventIcons: Record<keyof typeof soundSettings, string> = {
     realmUp: "🟢",
     realmDown: "🔴",
     authUp: "🔐",
@@ -81,13 +41,13 @@ const SoundSettings: React.FC<SoundSettingsProps> = ({
 
       {/* Кнопки-индикаторы без горизонтального скрола */}
       <div className="flex flex-wrap gap-1 max-w-full sm:max-w-none">
-        {(Object.keys(soundSettings) as (keyof SoundSettings)[]).map((key) => {
+        {(Object.keys(soundSettings) as (keyof typeof soundSettings)[]).map((key) => {
           const event = soundSettings[key];
           return (
             <button
               key={key}
               onClick={() =>
-                updateEvent(key, {
+                soundStore.updateEvent(key, {
                   enabled: !soundSettings[key].enabled,
                 })
               }
@@ -110,14 +70,14 @@ const SoundSettings: React.FC<SoundSettingsProps> = ({
         {/* Панель настроек */}
         {open && (
           <div className="absolute right-0 mt-2 w-72 sm:w-80 max-w-[calc(100vw-1rem)] bg-gray-900 border border-gray-600 text-sm p-4 rounded shadow-lg z-50 overflow-y-auto max-h-[80vh]">
-            {(Object.keys(soundSettings) as (keyof SoundSettings)[]).map((key) => {
+            {(Object.keys(soundSettings) as (keyof typeof soundSettings)[]).map((key) => {
               const event = soundSettings[key];
               return (
                 <div key={key} className="mb-4 p-3 border border-gray-700 rounded">
                   {/* Заголовок события с переключателем */}
                   <button
                     onClick={() =>
-                      updateEvent(key, {
+                      soundStore.updateEvent(key, {
                         enabled: !soundSettings[key].enabled,
                       })
                     }
@@ -141,7 +101,7 @@ const SoundSettings: React.FC<SoundSettingsProps> = ({
                           step={0.01}
                           value={event.volume}
                           onChange={(e) =>
-                            updateEvent(key, {
+                            soundStore.updateEvent(key, {
                               volume: Number(e.target.value),
                             })
                           }
@@ -155,7 +115,7 @@ const SoundSettings: React.FC<SoundSettingsProps> = ({
                         <select
                           value={event.soundType}
                           onChange={(e) =>
-                            updateEvent(key, {
+                            soundStore.updateEvent(key, {
                               soundType: e.target.value,
                             })
                           }
@@ -171,7 +131,7 @@ const SoundSettings: React.FC<SoundSettingsProps> = ({
 
                       {/* Тест */}
                       <button
-                        onClick={() => playTestSound(key)}
+                        onClick={() => soundStore.playTestSound(key)}
                         className="text-blue-400 text-xs hover:text-blue-300"
                       >
                         🔊 Test Sound
@@ -185,7 +145,7 @@ const SoundSettings: React.FC<SoundSettingsProps> = ({
             {/* Глобальная остановка */}
             <div className="border-t border-gray-700 pt-2">
               <button
-                onClick={stopSound}
+                onClick={() => soundStore.stop()}
                 className="text-red-400 text-xs hover:text-red-300"
               >
                 ⏹️ Stop All Sounds
@@ -196,6 +156,6 @@ const SoundSettings: React.FC<SoundSettingsProps> = ({
       </div>
     </div>
   );
-};
+});
 
 export default SoundSettings;

@@ -16,24 +16,11 @@ import RealmChat from "../components/chat/RealmChat";
 import { parseStatus } from "../utils/parseStatus";
 import IdleGame from "../components/game/IdleGame";
 import { DebugPanel } from "../components/DebugPanel";
-// import RealmCharts from "../components/RealmCharts";
+import { soundStore } from "../stores/soundStore"; // Импортируем новый store для звука
 
 interface StatusEntry {
   time: string;
   status: string;
-}
-
-interface SoundEvent {
-  enabled: boolean;
-  soundType: string;
-  volume: number;
-}
-
-interface AppSoundSettings {
-  realmUp: SoundEvent;
-  authUp: SoundEvent;
-  chat: SoundEvent;
-  realmDown: SoundEvent;
 }
 
 const API_BASE = import.meta.env.VITE_API_BASE;
@@ -46,31 +33,6 @@ function App() {
 
   const [language, setLanguage] = useState<"ru" | "en">("en");
   const t = translations[language];
-
-  // Новая система настроек звука
-  const [soundSettings, setSoundSettings] = useState<AppSoundSettings>(() => {
-    const saved = localStorage.getItem("soundSettings");
-    if (saved) {
-      const parsed = JSON.parse(saved);
-      // Проверяем, есть ли realmDown в старых настройках
-      if (!parsed.realmDown) {
-        console.log("Adding missing realmDown setting to old config");
-        parsed.realmDown = { enabled: true, soundType: "down", volume: 1 };
-      }
-      console.log("Loaded sound settings:", parsed);
-      return parsed;
-    }
-    const defaultSettings = {
-      realmUp: { enabled: true, soundType: "70elite", volume: 1 },
-      authUp: { enabled: true, soundType: "levelup", volume: 1 },
-      chat: { enabled: true, soundType: "newmsg", volume: 0.6 },
-      realmDown: { enabled: true, soundType: "down", volume: 1 },
-    };
-    console.log("Using default sound settings:", defaultSettings);
-    return defaultSettings;
-  });
-
-  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   const [authStatusText, setAuthStatusText] = useState("");
   const isAuthUp =
@@ -91,89 +53,21 @@ function App() {
     dps: 0,
   });
 
-  // Состояние для отслеживания взаимодействия пользователя с страницей
-  const [userInteracted, setUserInteracted] = useState(() => {
-    return localStorage.getItem("userInteracted") === "true";
-  });
-
   const handleUsernameSubmit = (name: string) => {
     localStorage.setItem("username", name);
     setUsername(name);
   };
 
-
-
-  const playSound = (eventType: keyof AppSoundSettings) => {
-    const event = soundSettings[eventType];
-    console.log(`Playing sound for ${eventType}:`, event);
-    
-    if (!event.enabled) {
-      console.log(`Sound ${eventType} is disabled`);
-      return;
-    }
-
-    // Проверяем, взаимодействовал ли пользователь с страницей
-    if (!userInteracted) {
-      console.log("🔇 Audio blocked: user hasn't interacted with page yet");
-      return;
-    }
-
-    // Останавливаем предыдущий звук, если он играет
-    if (audioRef.current) {
-      audioRef.current.pause();
-      audioRef.current.currentTime = 0;
-    }
-
-    // Загружаем новый звук с задержкой, чтобы избежать перезагрузки звука
-    
-      const audioPath = `/sounds/${event.soundType}${event.soundType === 'newmsg' ? '.ogg' : '.mp3'}`;
-      console.log(`Loading audio from: ${audioPath}`);
-      const audio = new Audio(audioPath);
-      audio.volume = event.volume;
-      audioRef.current = audio;
-  
-      audio
-        .play()
-        .then(() => console.log(`Successfully playing ${eventType} sound`))
-        .catch((err) => {
-          console.error("Ошибка при воспроизведении звука:", err);
-          if (err.name === 'NotAllowedError') {
-            console.log("🔇 Audio blocked by browser policy - user needs to interact first");
-          }
-        });
-
-  };
-
-  const stopSound = () => {
-    if (audioRef.current) {
-      audioRef.current.pause();
-      audioRef.current.currentTime = 0;
-    }
-  };
-
-  const playTestSound = (eventType: keyof AppSoundSettings) => {
-    playSound(eventType);
-  };
-
-  // Сохраняем настройки звука в localStorage
-  useEffect(() => {
-    localStorage.setItem("soundSettings", JSON.stringify(soundSettings));
-    console.log("Sound settings updated:", soundSettings);
-  }, [soundSettings]);
-
   // Отслеживаем взаимодействие пользователя с страницей
   useEffect(() => {
     const handleInteraction = () => {
-      if (!userInteracted) {
+      if (!soundStore.userInteracted) {
         console.log("👆 User interacted with page, audio enabled");
-        setUserInteracted(true);
-        localStorage.setItem("userInteracted", "true");
+        soundStore.setUserInteracted(true);
       }
     };
 
-    // События, которые считаются взаимодействием
     const events = ['click', 'keydown', 'touchstart', 'mousedown'];
-    
     events.forEach(event => {
       document.addEventListener(event, handleInteraction, { once: true });
     });
@@ -183,46 +77,7 @@ function App() {
         document.removeEventListener(event, handleInteraction);
       });
     };
-  }, [userInteracted]);
-
-  // Слушаем изменения в localStorage для синхронизации настроек звука
-  useEffect(() => {
-    const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === "soundSettings" && e.newValue) {
-        try {
-          const newSettings = JSON.parse(e.newValue);
-          setSoundSettings(newSettings);
-        } catch (error) {
-          console.error("Error parsing sound settings from localStorage:", error);
-        }
-      }
-    };
-
-    // Слушаем изменения localStorage из других вкладок
-    // window.addEventListener("storage", handleStorageChange);
-
-    // Также проверяем localStorage периодически для изменений в той же вкладке
-    const interval = setInterval(() => {
-      const saved = localStorage.getItem("soundSettings");
-      if (saved) {
-        try {
-          const parsed = JSON.stringify(soundSettings);
-          if (saved !== parsed) {
-            const newSettings = JSON.parse(saved);
-            console.log("Updating sound settings from localStorage:", newSettings);
-            setSoundSettings(newSettings);
-          }
-        } catch (error) {
-          console.error("Error checking sound settings:", error);
-        }
-      }
-    }, 1000); // Проверяем каждую секунду
-
-    return () => {
-      window.removeEventListener("storage", handleStorageChange);
-      clearInterval(interval);
-    };
-  }, [soundSettings]);
+  }, []);
 
   useEffect(() => {
     const dispose = autorun(() => {
@@ -232,12 +87,12 @@ function App() {
 
         // Если сервер поднялся
         if (prev === false && isUp) {
-          playSound("realmUp");
+          soundStore.play("realmUp");
         }
 
         // Если сервер упал
         if (prev === true && !isUp) {
-          playSound("realmDown");
+          soundStore.play("realmDown");
         }
 
         // Сохраняем текущее состояние
@@ -246,19 +101,19 @@ function App() {
     });
 
     return () => dispose();
-  }, [soundSettings.realmUp, soundSettings.realmDown]);
+  }, []);
 
   // Отслеживаем изменение статуса Auth сервера
   useEffect(() => {
     const prevAuthUp = prevAuthStatusRef.current;
-    
+
     // Если Auth сервер поднялся
     if (!prevAuthUp && isAuthUp) {
-      playSound("authUp");
+      soundStore.play("authUp");
     }
-    
+
     prevAuthStatusRef.current = isAuthUp;
-  }, [isAuthUp, soundSettings.authUp]);
+  }, [isAuthUp, soundStore.soundSettings.authUp]);
 
   const fetchStatuses = async () => {
     try {
@@ -314,26 +169,20 @@ function App() {
 
   return (
     <div className="p-4 font-mono max-w-screen-lg mx-auto">
-      <SoundSettings
-        soundSettings={soundSettings}
-        setSoundSettings={setSoundSettings}
-        playTestSound={playTestSound}
-        stopSound={stopSound}
-      />
+      <SoundSettings />
       <div
-        className={`p-2 rounded mb-4 text-sm ${
-          isAuthUp
-            ? "bg-green-700 text-white"
-            : "bg-red-600 text-white animate-pulse"
-        }`}
+        className={`p-2 rounded mb-4 text-sm ${isAuthUp
+          ? "bg-green-700 text-white"
+          : "bg-red-600 text-white animate-pulse"
+          }`}
       >
         {language === "ru" ? (
           <>
             {isAuthUp ? t.authUp : t.authDown} {t.notifications}:{" "}
-            {soundSettings.realmUp.enabled ? "ВКЛ 🔔" : "ВЫКЛ 🔕"}
-            {!userInteracted && (
+            {soundStore.soundSettings.realmUp.enabled ? "ВКЛ 🔔" : "ВЫКЛ 🔕"}
+            {!soundStore.userInteracted && (
               <button
-                onClick={() => setUserInteracted(true)}
+                onClick={() => soundStore.setUserInteracted(true)}
                 className="ml-2 underline hover:no-underline"
               >
                 (кликните для активации звука)
@@ -343,10 +192,10 @@ function App() {
         ) : (
           <>
             {isAuthUp ? t.authUp : t.authDown} {t.notifications}:{" "}
-            {soundSettings.realmUp.enabled && userInteracted ? "ON 🔔" : "OFF 🔕"}
-            {!userInteracted && (
+            {soundStore.soundSettings.realmUp.enabled && soundStore.userInteracted ? "ON 🔔" : "OFF 🔕"}
+            {!soundStore.userInteracted && (
               <button
-                onClick={() => setUserInteracted(true)}
+                onClick={() => soundStore.setUserInteracted(true)}
                 className="ml-2 underline hover:no-underline"
               >
                 (click to enable audio notifications)
@@ -396,13 +245,14 @@ function App() {
         username={username}
         onUsernameSubmit={handleUsernameSubmit}
         onChatMessage={() => {
-          console.log("Chat message received, sound enabled:", soundSettings.chat.enabled, "settings:", soundSettings.chat);
-          if (soundSettings.chat.enabled) {
-            playSound("chat");
+          console.log("Chat message received, sound enabled:", soundStore.soundSettings.chat.enabled, "settings:", soundStore.soundSettings.chat);
+          if (soundStore.soundSettings.chat.enabled) {
+            soundStore.play("chat");
           } else {
             console.log("Chat sound is disabled, not playing");
           }
-        }}
+        }
+        }
       />
 
       <StatusChart chartData={chartData} />

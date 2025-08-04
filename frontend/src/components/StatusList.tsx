@@ -10,21 +10,16 @@ interface StatusListProps {
 }
 
 const getLocalDateTime = (entry: StatusEntry) => {
-  
-  const getLocalDateTime = (entry: StatusEntry) => {
-    const date = new Date(entry.time);
-    return date.toLocaleString(undefined, {
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit",
-      hour: "2-digit",
-      minute: "2-digit",
-      second: "2-digit",
-      hour12: false,
-    });
-  };
-
-  return getLocalDateTime(entry);
+  const date = new Date(entry.time);
+  return date.toLocaleString(undefined, {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false,
+  });
 };
 
 const StatusList: React.FC<StatusListProps> = ({ statuses }) => {
@@ -36,7 +31,7 @@ const StatusList: React.FC<StatusListProps> = ({ statuses }) => {
           const localTime = getLocalDateTime(entry);
           const cleanStatus = entry.status.replace(
             /^\[\d{2}\/\d{2}\/\d{4}, \d{2}:\d{2}:\d{2}\]\s?/,
-            "\n"
+            ""
           );
           return (
             <li key={i} className="text-sm">
