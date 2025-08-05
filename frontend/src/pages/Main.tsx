@@ -220,7 +220,7 @@ function App() {
         </button>
 
         {showGame && (
-          <div className="fixed bottom-4 right-4 w-[340px] h-[700px] z-50 bg-gray-800 rounded shadow-lg overflow-hidden border border-gray-700">
+          <div className="fixed bottom-4 right-4 w-[340px] max-h-[90vh] z-50 bg-gray-700 rounded shadow-lg overflow-hidden border border-gray-700 overflow-y-auto">
             <IdleGame
               onStatsUpdate={setMiniGameStats}
               language={language}

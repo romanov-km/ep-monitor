@@ -125,6 +125,27 @@ const IdleGame: React.FC<IdleGameProps> = ({
     label: language === "en" ? "INSANE 100k Clicks" : "Невороятный удар" ,
     achieved: false,
   }]);
+  const [petStones, setPetStones] = useState(0);
+  if (Math.random() < 0.15) setPetStones(s => s + 1);
+
+  const petUpgradeCost = 20 * petLevel;
+  const stoneCost = 2 + Math.floor(petLevel / 2);
+  const successChance = Math.max(50, 100 - petLevel * 3); // Минимум 50%
+
+  const handlePetUpgrade = () => {
+    if (gold >= petUpgradeCost && petStones >= stoneCost && petUnlocked) {
+      setGold(g => g - petUpgradeCost);
+      setPetStones(s => s - stoneCost);
+
+      if (Math.random() * 100 < successChance) {
+        setPetLevel(lvl => lvl + 1);
+        setPetDps(dps => dps + 1 + Math.floor(Math.random() * 2)); // иногда +2
+      } else {
+        setGold(g => g - petUpgradeCost / 2); // штраф за неудачу
+        setPetLevel(lvl => Math.max(1, lvl - 1)); // деградация уровня
+      }
+    }
+  };
 
   useEffect(() => {
     const savedGold = localStorage.getItem("gold");
@@ -292,6 +313,9 @@ const IdleGame: React.FC<IdleGameProps> = ({
       {petUnlocked && (
         <div className="mb-2 z-20 relative">
           {t.pet}: {petLevel} {t.level} — {petDps} {t.dps}
+          <span className="ml-4 text-yellow-300 text-xs">
+            {t.petUpgrade}: {petUpgradeCost} {t.gold}
+          </span>
         </div>
       )}
       <div className="mb-2 z-20 relative text-sm text-blue-400">
@@ -388,9 +412,18 @@ const IdleGame: React.FC<IdleGameProps> = ({
         </div>
       )}
 
-      {!petUnlocked && (
-        <div className="mt-6 text-sm text-yellow-300 z-20 relative">
-          {t.petHint}
+      {petUnlocked && (
+        <div className="mb-4 z-20 relative">
+          <button
+            onClick={handlePetUpgrade}
+            disabled={gold < petUpgradeCost || petStones < stoneCost}
+            className="bg-yellow-700 hover:bg-yellow-800 px-4 py-2 rounded disabled:opacity-50"
+          >
+            {t.petUpgrade} ({petUpgradeCost} {t.gold} + {stoneCost} 🪨, {successChance}%)
+          </button>
+          <div className="text-xs text-gray-400 mt-1">
+            {t.petStones}: {petStones}
+          </div>
         </div>
       )}
 
