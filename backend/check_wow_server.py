@@ -21,7 +21,7 @@ except redis.exceptions.ConnectionError as e:
 # Константы
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 DISCORD_WEBHOOK_URL = os.getenv("DISCORD_WEBHOOK_URL")
-HOST = "game.project-epoch.net"
+HOST = "57.128.162.57"
 PORT = 3724
 CHECK_INTERVAL = 60
 LAST_UPDATE_ID = 0
@@ -31,13 +31,13 @@ LAST_UPDATE_ID = 0
 REALMS = [
     {
         "name": "Kezan PVE (Debian Linux)",
-        "host": "game.project-epoch.net",
-        "port": 8085,
+        "host": "198.244.165.233",
+        "port": 8208,
     },
     {
         "name": "Gurubashi PVP (Debian Linux)",
-        "host": "game.project-epoch.net",
-        "port": 8086,
+        "host": "198.244.165.233",
+        "port": 8209,
     },
     {
         "name": "Kezan PVE (Windows old)",

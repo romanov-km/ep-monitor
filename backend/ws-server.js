@@ -15,6 +15,9 @@ await redisClient.connect();
 const realmClients = new Map();
 const usernames = new Map();
 const busyNames = new Set();
+// Grace period для освобождения ника
+const pendingNickRelease = new Map(); // name -> timeoutId
+const NICK_GRACE_PERIOD = 10000; // 10 секунд
 
 // Защита от частых переподключений
 const recentConnections = new Map(); // username -> timestamp
@@ -96,11 +99,19 @@ async function gracefulShutdown() {
 
 // Функция для установки heartbeat для клиента
 function setupHeartbeat(ws) {
+  ws.isAlive = true;
+  ws.on('pong', () => {
     ws.isAlive = true;
-    
-    ws.on('pong', () => {
-        ws.isAlive = true;
-    });
+  });
+  const heartbeatId = setInterval(() => {
+    if (ws.isAlive === false) {
+      ws.terminate();
+      return;
+    }
+    ws.isAlive = false;
+    ws.ping();
+  }, HEARTBEAT_INTERVAL);
+  clientHeartbeats.set(ws, heartbeatId);
 }
 
 // Функция для очистки heartbeat
@@ -111,7 +122,6 @@ function clearHeartbeat(ws) {
     clearInterval(heartbeatId);
     clientHeartbeats.delete(ws);
   }
-  
   if (ws.heartbeatTimeoutId) {
     clearTimeout(ws.heartbeatTimeoutId);
     ws.heartbeatTimeoutId = null;
@@ -214,15 +224,27 @@ wss.on("connection", async (ws, req) => {
         }
         recentConnections.set(username, now);
 
-        if (busyNames.has(username)) {
-          ws.send(JSON.stringify({
-            type: "error",
-            code: "duplicate_nick",
-            message: "You have been disconnected: duplicate nickname.",
-          }));
-          ws.close();
-          return;
-        }
+        // Если ник ожидает освобождения — отменяем таймер
+ 
+if (busyNames.has(username)) {
+  let waitMs = 0;
+  if (pendingNickRelease.has(username)) {
+    const timeoutObj = pendingNickRelease.get(username);
+    const timeLeft = Math.max(
+      0,
+      NICK_GRACE_PERIOD - (Date.now() - timeoutObj.start)
+    );
+    waitMs = timeLeft;
+  }
+  ws.send(JSON.stringify({
+    type: "error",
+    code: "duplicate_nick",
+    message: "This nickname is busy.",
+    wait: waitMs,
+  }));
+  ws.close();
+  return;
+}
 
         ws.realm = realm;
         ws.username = username;
@@ -286,24 +308,33 @@ wss.on("connection", async (ws, req) => {
   ws.on("close", (code, reason) => {
     const realm = ws.realm;
     const name  = usernames.get(ws);
-    
+
     // Очищаем heartbeat
     clearHeartbeat(ws);
-    
+
     usernames.delete(ws);
-    if (name) busyNames.delete(name);
+    if (name) {
+      // Вместо немедленного удаления ника — задержка
+      if (pendingNickRelease.has(name)) clearTimeout(pendingNickRelease.get(name));
+      const timeoutId = setTimeout(() => {
+        busyNames.delete(name);
+        pendingNickRelease.delete(name);
+        console.log(`⏳ Ник ${name} освобождён после grace period`);
+      }, NICK_GRACE_PERIOD);
+      pendingNickRelease.set(name, timeoutId);
+    }
 
     if (realm && realmClients.has(realm)) {
       realmClients.get(realm).delete(ws);
       broadcastUserCount(realm);
       broadcastOnlineUsers(realm);
     }
-    
+
     // Логируем только если был зарегистрированный пользователь с дебаунсом
     if (name) {
       const now = Date.now();
       const lastLog = disconnectLogs.get(name);
-      
+
       if (!lastLog || (now - lastLog) > LOG_DEBOUNCE_TIME) {
         console.log(`Клиент отключился: ${name} (код: ${code}, причина: ${reason || 'не указана'})`);
         disconnectLogs.set(name, now);
