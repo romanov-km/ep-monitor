@@ -17,6 +17,7 @@ import { parseStatus } from "../utils/parseStatus";
 import IdleGame from "../components/game/IdleGame";
 import { DebugPanel } from "../components/DebugPanel";
 import { soundStore } from "../stores/soundStore"; // Импортируем новый store для звука
+import { observer } from "mobx-react-lite";
 
 interface StatusEntry {
   time: string;
@@ -25,7 +26,7 @@ interface StatusEntry {
 
 const API_BASE = import.meta.env.VITE_API_BASE;
 
-function App() {
+const App = observer(function App() {
   const [statuses, setStatuses] = useState<StatusEntry[]>([]);
   const [chartData, setChartData] = useState<
     { time: string; statusValue: number }[]
@@ -58,25 +59,17 @@ function App() {
     setUsername(name);
   };
 
-  // Отслеживаем взаимодействие пользователя с страницей
   useEffect(() => {
-    const handleInteraction = () => {
-      if (!soundStore.userInteracted) {
-        console.log("👆 User interacted with page, audio enabled");
-        soundStore.setUserInteracted(true);
-      }
+    // Один раз на всю сессию!
+    const unlock = () => {
+      soundStore.setUserInteracted(true);
+      soundStore.preloadAllSounds(); // реальная предзагрузка
+      window.removeEventListener("pointerdown", unlock);
     };
 
-    const events = ['click', 'keydown', 'touchstart', 'mousedown'];
-    events.forEach(event => {
-      document.addEventListener(event, handleInteraction, { once: true });
-    });
+    window.addEventListener("pointerdown", unlock);
 
-    return () => {
-      events.forEach(event => {
-        document.removeEventListener(event, handleInteraction);
-      });
-    };
+    return () => window.removeEventListener("pointerdown", unlock);
   }, []);
 
   useEffect(() => {
@@ -169,7 +162,9 @@ function App() {
 
   return (
     <div className="p-4 font-mono max-w-screen-lg mx-auto">
+
       <SoundSettings />
+
       <div
         className={`p-2 rounded mb-4 text-sm ${isAuthUp
           ? "bg-green-700 text-white"
@@ -179,30 +174,32 @@ function App() {
         {language === "ru" ? (
           <>
             {isAuthUp ? t.authUp : t.authDown} {t.notifications}:{" "}
-            {soundStore.soundSettings.realmUp.enabled ? "ВКЛ 🔔" : "ВЫКЛ 🔕"}
-            {!soundStore.userInteracted && (
-              <button
-                onClick={() => soundStore.setUserInteracted(true)}
-                className="ml-2 underline hover:no-underline"
-              >
-                (кликните для активации звука)
-              </button>
-            )}
+            {soundStore.soundSettings.realmUp.enabled && !soundStore.userInteracted ? "ВКЛ 🔔" : "ВЫКЛ 🔕"}
+            <div>
+              {!soundStore.userInteracted && (
+                <div className="bg-yellow-600/60 text-white px-3 py-2 rounded mb-3 text-sm shadow animate-pulse">
+                  👆 Для активации звуковых уведомлений кликните по странице
+                </div>
+              )}
+
+            </div>
           </>
         ) : (
           <>
             {isAuthUp ? t.authUp : t.authDown} {t.notifications}:{" "}
             {soundStore.soundSettings.realmUp.enabled && soundStore.userInteracted ? "ON 🔔" : "OFF 🔕"}
-            {!soundStore.userInteracted && (
-              <button
-                onClick={() => soundStore.setUserInteracted(true)}
-                className="ml-2 underline hover:no-underline"
-              >
-                (click to enable audio notifications)
-              </button>
-            )}
+            <div>
+              {!soundStore.userInteracted && (
+                <div className="bg-yellow-600/60 text-white px-3 py-2 rounded mb-3 text-sm shadow animate-pulse">
+                  👆 To activate sound notifications, click on the page
+                </div>
+              )}
+
+            </div>
           </>
+
         )}
+
       </div>
 
       <h1 className="text-1xl font-bold mb-4">{t.title}</h1>
@@ -268,6 +265,6 @@ function App() {
       <Analytics />
     </div>
   );
-}
+});
 
 export default App;

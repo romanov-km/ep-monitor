@@ -63,25 +63,13 @@ export const DebugPanel: React.FC = () => {
   const triggerUp = () => {
         realmStore.setRealms([
           {
-            name: "Kezan PVE (Debian Linux)",
+            name: "Kezan",
             status: "UP",
             icon: "🟢",
             time: new Date().toISOString().slice(0, 19).replace("T", " "),
           },
           {
-            name: "Gurubashi PVP (Debian Linux)",
-            status: "UP",
-            icon: "🟢",
-            time: new Date().toISOString().slice(0, 19).replace("T", " "),
-          },
-          {
-            name: "Kezan PVE (Windows old)",
-            status: "UP",
-            icon: "🟢",
-            time: new Date().toISOString().slice(0, 19).replace("T", " "),
-          },
-          {
-            name: "Gurubashi PVP (Windows old)",
+            name: "Gurubashi",
             status: "UP",
             icon: "🟢",
             time: new Date().toISOString().slice(0, 19).replace("T", " "),
@@ -92,25 +80,13 @@ export const DebugPanel: React.FC = () => {
       const triggerDown = () => {
         realmStore.setRealms([
           {
-            name: "Kezan PVE (Debian Linux)",
+            name: "Kezan PVE",
             status: "DOWN",
             icon: "🔴",
             time: new Date().toISOString().slice(0, 19).replace("T", " "),
           },
           {
-            name: "Gurubashi PVP (Debian Linux)",
-            status: "DOWN",
-            icon: "🔴",
-            time: new Date().toISOString().slice(0, 19).replace("T", " "),
-          },
-          {
-            name: "Kezan PVE (Windows old)",
-            status: "DOWN",
-            icon: "🔴",
-            time: new Date().toISOString().slice(0, 19).replace("T", " "),
-          },
-          {
-            name: "Gurubashi PVP (Windows old)",
+            name: "Gurubashi",
             status: "DOWN",
             icon: "🔴",
             time: new Date().toISOString().slice(0, 19).replace("T", " "),

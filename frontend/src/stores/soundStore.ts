@@ -32,7 +32,7 @@ class SoundStore {
   })();
   audioCache: Record<string, HTMLAudioElement> = {};
 
-  userInteracted = localStorage.getItem("userInteracted") === "true";
+  userInteracted = false;
 
   constructor() {
     makeAutoObservable(this);
@@ -45,7 +45,6 @@ class SoundStore {
 
   setUserInteracted(value: boolean) {
     this.userInteracted = value;
-    localStorage.setItem("userInteracted", value ? "true" : "false");
   }
 
   updateEvent(event: keyof AppSoundSettings, updates: Partial<SoundEvent>) {
@@ -55,16 +54,25 @@ class SoundStore {
     });
   }
 
-  preloadAllSounds() {
-    Object.values(this.soundSettings).forEach((config) => {
-      const ext = config.soundType === "newmsg" ? ".ogg" : ".mp3";
-      const path = `/sounds/${config.soundType}${ext}`;
-      if (!this.audioCache[path]) {
-        const audio = new Audio(path);
-        this.audioCache[path] = audio;
-      }
-    });
-  }
+preloadAllSounds() {
+  Object.values(this.soundSettings).forEach((config) => {
+    const ext = config.soundType === "newmsg" ? ".ogg" : ".mp3";
+    const path = `/sounds/${config.soundType}${ext}`;
+    if (!this.audioCache[path]) {
+      const audio = new Audio(path);
+      audio.preload = "auto";
+      // Явно инициируем загрузку
+      audio.load();
+      audio.oncanplaythrough = () => {
+        console.log(`${path} загружен`);
+      };
+      audio.onerror = (e) => {
+        console.error(`Ошибка загрузки звука: ${path}`, e);
+      };
+      this.audioCache[path] = audio;
+    }
+  });
+}
 
   play(event: keyof AppSoundSettings) {
     if (!this.userInteracted) {
