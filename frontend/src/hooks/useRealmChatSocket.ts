@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { v4 as uuidv4 } from 'uuid';
 
 interface ChatEntry {
   time: string;
@@ -31,6 +32,13 @@ export const useRealmChatSocket = (
   const reconnectBlockedRef = useRef(false);
   const reconnectAttemptsRef = useRef(0);
   const maxReconnectAttempts = options?.maxReconnectAttempts ?? 10;
+
+  let sessionId = localStorage.getItem("chatSessionId") || uuidv4();
+  if (!sessionId) {
+    sessionId = uuidv4();
+    localStorage.setItem("chatSessionId", sessionId);
+  }
+  console.log(sessionId);
 
   const safeClose = () => {
     const sock = socketRef.current;
@@ -108,6 +116,7 @@ export const useRealmChatSocket = (
         type: "subscribe",
         realm,
         username,
+        sessionId
       }));
     };
 
