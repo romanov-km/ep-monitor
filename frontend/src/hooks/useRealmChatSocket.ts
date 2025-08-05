@@ -16,6 +16,12 @@ interface UseRealmChatSocketOptions {
   maxReconnectAttempts?: number;
 }
 
+let sessionId = localStorage.getItem("chatSessionId");
+if (!sessionId) {
+  sessionId = uuidv4();
+  localStorage.setItem("chatSessionId", sessionId);
+}
+
 export const useRealmChatSocket = (
   realm: string,
   username: string,
@@ -32,13 +38,6 @@ export const useRealmChatSocket = (
   const reconnectBlockedRef = useRef(false);
   const reconnectAttemptsRef = useRef(0);
   const maxReconnectAttempts = options?.maxReconnectAttempts ?? 10;
-
-  let sessionId = localStorage.getItem("chatSessionId") || uuidv4();
-  if (!sessionId) {
-    sessionId = uuidv4();
-    localStorage.setItem("chatSessionId", sessionId);
-  }
-  console.log(sessionId);
 
   const safeClose = () => {
     const sock = socketRef.current;
