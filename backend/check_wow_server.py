@@ -19,14 +19,14 @@ except redis.exceptions.ConnectionError as e:
     exit(1)
 
 # Константы
-API_URL_SERVER= os.getenv("API_URL_SERVER")
+API_URL= os.getenv("API_URL")
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 DISCORD_WEBHOOK_URL = os.getenv("DISCORD_WEBHOOK_URL")
 HOST = "57.128.162.57"
 PORT = 3724
 CHECK_INTERVAL = 60
 LAST_UPDATE_ID = 0
-REALM_NAME = "Kezan"
+REALM_NAME = "Kezan PVE (Debian Linux)"
 
 #ns3200144.ip-198-244-165.eu ns31480980.ip-198-244-179 51.77.108.104 51.89.175.47
 
@@ -65,7 +65,7 @@ def t(key, lang="ru", **kwargs):
 #new
 def get_realm_status():
     try:
-        resp = requests.get(API_URL_SERVER, timeout=5)
+        resp = requests.get(API_URL, timeout=5)
         data = resp.json()
         for realm in data.get("realms", []):
             if realm["name"] == REALM_NAME:
@@ -74,6 +74,16 @@ def get_realm_status():
         print(f"⚠️ Ошибка при запросе API: {e}")
     return None, None
 
+# Запись логов в Redis
+def log_realm_status(msg):
+    redis_key = f"logs:{REALM_NAME.replace(' ', '_')}"
+    try:
+        r.lpush(redis_key, msg)
+        r.ltrim(redis_key, 0, 499)
+    except Exception as e:
+        print(f"⚠️ Redis ошибка при записи логов: {e}")
+
+# Мониторинг статуса реалма через API
 def monitor_realm():
     last_status = None
 
@@ -82,8 +92,10 @@ def monitor_realm():
         status = "UP" if is_online else "DOWN"
         icon = "🟢" if is_online else "🔴"
         timestamp = datetime.now().strftime("[%Y-%m-%d %H:%M:%S]")
-        msg = f"{timestamp} Realm {REALM_NAME} status: {icon} {status} (Last online: {last_online})"
+        msg = f"{timestamp} Realm {REALM_NAME} status: {icon} {status}"
         print(msg)
+
+        log_realm_status(msg)
 
         if last_status is not None and last_status != status:
             send_telegram_message_to_all(msg)
@@ -289,25 +301,6 @@ def monitor_auth():
 #             last_realm_statuses[name] = status
 
 #         time.sleep(CHECK_INTERVAL)
-
-def monitor_realm():
-    last_status = None
-
-    while True:
-        is_online, last_online = get_realm_status()
-        status = "UP" if is_online else "DOWN"
-        icon = "🟢" if is_online else "🔴"
-        timestamp = datetime.now().strftime("[%Y-%m-%d %H:%M:%S]")
-        msg = f"{timestamp} Realm {REALM_NAME} status: {icon} {status} (Last online: {last_online})"
-        print(msg)
-
-        if last_status is not None and last_status != status:
-            send_telegram_message_to_all(msg)
-            send_discord_message(f"Realm {REALM_NAME} status changed: {icon} {status}")
-
-        last_status = status
-        time.sleep(CHECK_INTERVAL)
-
 
 def telegram_listener_loop():
     while True:
