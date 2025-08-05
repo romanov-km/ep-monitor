@@ -174,8 +174,8 @@ app.get("/api/realm-status", async (req, res) => {
   try {
     // список реалмов (можно вынести в .env или в Redis позже)
     const realms = [
-      "Kezan_PVE_(Debian_Linux)",
-      "Gurubashi_PVP_(Debian_Linux)",
+      "Kezan",
+      "Gurubashi",
     ];
 
     const statuses = [];

@@ -26,32 +26,7 @@ HOST = "57.128.162.57"
 PORT = 3724
 CHECK_INTERVAL = 60
 LAST_UPDATE_ID = 0
-REALM_NAME = "Kezan PVE (Debian Linux)"
-
-#ns3200144.ip-198-244-165.eu ns31480980.ip-198-244-179 51.77.108.104 51.89.175.47
-
-REALMS = [
-    {
-        "name": "Kezan PVE (Debian Linux)",
-        "host": "51.77.108.104",
-        "port": 8208,
-    },
-    {
-        "name": "Gurubashi PVP (Debian Linux)",
-        "host": "ns3200144.ip-198-244-165.eu",
-        "port": 8209,
-    },
-    {
-        "name": "Kezan PVE (Windows old)",
-        "host": "ns3200144.ip-198-244-165.eu",
-        "port": 8085,
-    },
-    {
-        "name": "Gurubashi PVP (Windows old)",
-        "host": "ns3200144.ip-198-244-165.eu",
-        "port": 8086,
-    },
-]
+REALMS = ["Kezan", "Gurubashi"]
 
 # Telegram
 
@@ -63,20 +38,20 @@ def t(key, lang="ru", **kwargs):
         return value.format(**kwargs)
     return value
 #new
-def get_realm_status():
+def get_realm_status(realm_name):
     try:
         resp = requests.get(API_URL, timeout=5)
         data = resp.json()
         for realm in data.get("realms", []):
-            if realm["name"] == REALM_NAME:
+            if realm["name"] == realm_name:
                 return realm["worldServerOnline"], realm["lastOnline"]
     except Exception as e:
         print(f"⚠️ Ошибка при запросе API: {e}")
     return None, None
 
 # Запись логов в Redis
-def log_realm_status(msg):
-    redis_key = f"logs:{REALM_NAME.replace(' ', '_')}"
+def log_realm_status(realm_name, msg):
+    redis_key = f"logs:{realm_name.replace(' ', '_')}"
     try:
         r.lpush(redis_key, msg)
         r.ltrim(redis_key, 0, 499)
@@ -84,22 +59,22 @@ def log_realm_status(msg):
         print(f"⚠️ Redis ошибка при записи логов: {e}")
 
 # Мониторинг статуса реалма через API
-def monitor_realm():
+def monitor_realm(realm_name, msg):
     last_status = None
 
     while True:
-        is_online, last_online = get_realm_status()
+        is_online, last_online = get_realm_status(realm_name)
         status = "UP" if is_online else "DOWN"
         icon = "🟢" if is_online else "🔴"
         timestamp = datetime.now().strftime("[%Y-%m-%d %H:%M:%S]")
-        msg = f"{timestamp} Realm {REALM_NAME} status: {icon} {status}"
+        msg = f"{timestamp} Realm {realm_name} status: {icon} {status}"
         print(msg)
 
         log_realm_status(msg)
 
         if last_status is not None and last_status != status:
             send_telegram_message_to_all(msg)
-            send_discord_message(f"Realm {REALM_NAME} status changed: {icon} {status}")
+            send_discord_message(f"Realm {realm_name} status changed: {icon} {status}")
 
         last_status = status
         time.sleep(CHECK_INTERVAL)
@@ -239,11 +214,11 @@ def check_server_status_text():
 
 def get_realms_status_text():
     lines = []
-    for realm in REALMS:
-        is_up = check_tcp_port(realm["host"], realm["port"])
-        icon = "🟢" if is_up else "🔴"
-        status = "UP" if is_up else "DOWN"
-        lines.append(f"{realm['name']}: {icon} {status}")
+    for realm_name in REALMS:
+        is_online, _ = get_realm_status(realm_name)
+        icon = "🟢" if is_online else "🔴"
+        status = "UP" if is_online else "DOWN"
+        lines.append(f"{realm_name}: {icon} {status}")
     return "\n".join(lines)
 
 def log_status(status):
@@ -272,36 +247,6 @@ def monitor_auth():
         last_auth_status = auth_status
         time.sleep(CHECK_INTERVAL)
 
-# 🌐 Проверка реалмов
-
-# def monitor_realms():
-#     last_realm_statuses = {}
-
-#     while True:
-#         for realm in REALMS:
-#             is_up = check_tcp_port(realm["host"], realm["port"])
-#             status = "UP" if is_up else "DOWN"
-#             name = realm["name"]
-#             timestamp = datetime.now().strftime("[%Y-%m-%d %H:%M:%S]")
-#             icon = "🟢" if status == "UP" else "🔴"
-#             msg = f"{timestamp} Realm {name} status: {icon} {status}"
-#             print(msg)
-
-#             redis_key = f"logs:{name.replace(' ', '_')}"
-#             try:
-#                 r.lpush(redis_key, msg)
-#                 r.ltrim(redis_key, 0, 499)
-#             except Exception as e:
-#                 print(f"⚠️ Redis error for realm {name}: {e}")
-
-#             last = last_realm_statuses.get(name)
-#             if last is not None and last != status:
-#                 send_telegram_message_to_all(msg)
-#                 send_discord_message(f"Realm {name} status changed: {icon} {status}")
-#             last_realm_statuses[name] = status
-
-#         time.sleep(CHECK_INTERVAL)
-
 def telegram_listener_loop():
     while True:
         update_new_users()
@@ -310,9 +255,12 @@ def telegram_listener_loop():
 # Запуск
 if __name__ == "__main__":
     print("🚀 Запуск мониторинга...")
-
+    
     threading.Thread(target=monitor_auth, daemon=True).start()
-    threading.Thread(target=monitor_realm, daemon=True).start()
+
+    for realm in REALMS:
+        threading.Thread(target=monitor_realm, args=(realm,), daemon=True).start()
+
     #threading.Thread(target=monitor_realms, daemon=True).start()
     threading.Thread(target=telegram_listener_loop, daemon=True).start()
 
