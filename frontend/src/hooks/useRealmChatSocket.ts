@@ -18,7 +18,7 @@ interface UseRealmChatSocketOptions {
 export const useRealmChatSocket = (
   realm: string,
   username: string,
-  options?: UseRealmChatSocketOptions
+  options?: UseRealmChatSocketOptions,
 ) => {
   const [messages, setMessages] = useState<ChatEntry[]>([]);
   const [userCount, setUserCount] = useState(0);
@@ -119,6 +119,7 @@ export const useRealmChatSocket = (
           console.error("Server error:", data.message, "Code:", data.code);
           if (data.code === "duplicate_nick") {
             console.warn("🚫 Duplicate nickname detected, blocking reconnection");
+            onError?.(data.message);
             reconnectBlockedRef.current = true;
             // Увеличиваем задержку при ошибке дублирования ника
             setTimeout(() => {

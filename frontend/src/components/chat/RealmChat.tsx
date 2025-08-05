@@ -10,6 +10,7 @@ interface RealmChatProps {
   username: string;
   onUsernameSubmit: (username: string) => void;
   onChatMessage?: () => void;
+  wait: number;
 }
 
 /**
@@ -20,7 +21,7 @@ interface RealmChatProps {
  * ─ более заметные кнопки и поля ввода
  */
 const RealmChat: React.FC<RealmChatProps> = observer(
-  ({ realm, username, onUsernameSubmit, onChatMessage }) => {
+  ({ realm, username, onUsernameSubmit, onChatMessage, wait }) => {
     const scrollRef = useRef<HTMLDivElement>(null);
     const [text, setText] = useState("");
 
@@ -41,18 +42,13 @@ const RealmChat: React.FC<RealmChatProps> = observer(
       manualReconnect,
     } = useRealmChatSocket(realm, username, {
       onError: (msg) => {
-        if (msg.includes("duplicate")) {
-          setError(msg);
-          setShowModal(true);
-          setHasDuplicateError(true);
-        } else {
-          console.warn("Chat error:", msg);
-        }
+        setError(msg);
+        setShowModal(true);
+        setHasDuplicateError(msg.includes("duplicate"));
       },
       onNewMessage: (entry) => {
         if (entry.user !== username) {
           onChatMessage?.();
-
           if (document.visibilityState !== "visible") {
             startTitleBlink();
           }
@@ -67,14 +63,14 @@ const RealmChat: React.FC<RealmChatProps> = observer(
       }
     }, [error, hasDuplicateError]);
 
-    // close modal on successful auth
+    // close modal and clear error on successful auth
     useEffect(() => {
-      if (username && !error && isConnected) {
+      if (username && isConnected) {
         setError(null);
         setHasDuplicateError(false);
         setShowModal(false);
       }
-    }, [username, error, isConnected]);
+    }, [username, isConnected]);
 
     // stop title blink when user focuses tab or interacts
     useEffect(() => {
@@ -90,6 +86,7 @@ const RealmChat: React.FC<RealmChatProps> = observer(
     const handleUsernameSubmit = useCallback(
       (name: string) => {
         setError(null);
+        setHasDuplicateError(false);
         onUsernameSubmit(name);
       },
       [onUsernameSubmit]
@@ -262,7 +259,7 @@ const RealmChat: React.FC<RealmChatProps> = observer(
 
         {/* username modal */}
         {showModal && (
-          <UsernameModal error={error} onSubmit={handleUsernameSubmit} currentUsername={username} />
+          <UsernameModal error={error ?? undefined} wait={wait} onSubmit={handleUsernameSubmit} currentUsername={username} />
         )}
       </div>
     );

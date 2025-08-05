@@ -1,92 +1,84 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
 
-interface Props {
-  onSubmit: (username: string) => void;
-  error: string | null;
+interface UsernameModalProps {
+  error?: string;
+  wait?: number;
+  onSubmit: (name: string) => void;
   currentUsername?: string;
 }
 
-const UsernameModal: React.FC<Props> = ({ onSubmit, error, currentUsername }) => {
-  const [name, setName] = useState(currentUsername || "");
-  const [hasChanged, setHasChanged] = useState(false);
+const UsernameModal: React.FC<UsernameModalProps> = ({ error, wait, onSubmit, currentUsername }) => {
+  const [name, setName] = useState("");
+  const [seconds, setSeconds] = useState(wait ? Math.ceil(wait / 1000) : 0);
+  const [suggested, setSuggested] = useState(() =>
+    currentUsername ? currentUsername + Math.floor(Math.random() * 1000) : "user" + Math.floor(Math.random() * 1000)
+  );
 
-  // Определяем язык из localStorage или по умолчанию английский
-  const language = localStorage.getItem("lang") || "en";
-
-  const handleSave = () => {
-    if (name.trim()) {
-      onSubmit(name.trim());
-    }
-  };
-
-  const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setName(e.target.value);
-    setHasChanged(e.target.value.trim() !== currentUsername);
-  };
-
+  // Таймер обратного отсчёта
   useEffect(() => {
-    const listener = (e: KeyboardEvent) => {
-      if (e.key === "Enter") handleSave();
-    };
-    window.addEventListener("keydown", listener);
-    return () => window.removeEventListener("keydown", listener);
-  }, []);
+    if (!seconds) return;
+    const interval = setInterval(() => setSeconds((s) => Math.max(0, s - 1)), 1000);
+    return () => clearInterval(interval);
+  }, [seconds]);
 
-  // Обновляем поле при изменении currentUsername
+  // Обновить при wait из пропсов
   useEffect(() => {
-    if (currentUsername) {
-      setName(currentUsername);
-      setHasChanged(false);
-    }
-  }, [currentUsername]);
+    setSeconds(wait ? Math.ceil(wait / 1000) : 0);
+  }, [wait]);
+
+  const handleSuggest = () => {
+    const newNick = (currentUsername || "user") + Math.floor(Math.random() * 10000);
+    setSuggested(newNick);
+    setName(newNick);
+  };
 
   return (
-    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
-      <div className="bg-gray-800 p-6 rounded-xl shadow-lg w-full max-w-sm text-white">
-        <h2 className="text-xl mb-4 font-semibold">
-          {currentUsername 
-            ? (language === "ru" ? "Изменить имя" : "Change your name")
-            : (language === "ru" ? "Введите имя" : "Enter your name")
-          }
-        </h2>
+    <div className="fixed inset-0 flex items-center justify-center bg-black/70 z-50">
+      <div className="bg-gray-900 border border-gray-700 rounded-xl p-6 shadow-lg min-w-[320px]">
+        <h3 className="text-lg font-semibold mb-2 text-white">Choose a nickname for the chat</h3>
         {error && (
-          <div className="text-red-400 text-sm mb-2 p-2 bg-red-900/20 border border-red-500/30 rounded">
-            {error.includes("duplicate") ? (
-              <>
-                <div className="font-semibold mb-1">
-                  ⚠️ {language === "ru" ? "Имя уже занято" : "Username already taken"}
-                </div>
-                <div className="text-xs text-red-300">
-                  {language === "ru" 
-                    ? "Это имя уже используется. Пожалуйста, выберите другое."
-                    : "This username is already in use. Please choose a different one."
-                  }
-                </div>
-              </>
-            ) : (
-              error
+          <div className="mb-2 text-red-400 text-sm">
+            {error}
+            {seconds > 0 && (
+              <div className="mt-1 text-yellow-300">
+                This nickname will be available through <b>{seconds}</b> сек.
+              </div>
             )}
           </div>
         )}
-        <input
-          type="text"
-          autoFocus
-          className="w-full p-2 rounded bg-gray-700 text-white mb-4 outline-none"
-          value={name}
-          onChange={handleNameChange}
-          placeholder={language === "ru" ? "Например, пользователь" : "For example, user"}
-        />
-        <button
-          onClick={handleSave}
-          disabled={!name.trim()}
-          className={`w-full py-2 rounded transition-colors ${
-            hasChanged 
-              ? "bg-blue-600 hover:bg-blue-700" 
-              : "bg-green-600 hover:bg-green-700"
-          }`}
-        >
-          {language === "ru" ? "Сохранить" : "Save"}
-        </button>
+        <div className="flex gap-2 mt-2">
+          <input
+            className="flex-1 px-3 py-2 rounded border border-gray-600 bg-gray-800 text-white"
+            placeholder="Enter a new nickname"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            autoFocus
+          />
+          <button
+            className="bg-gray-700 text-gray-200 px-3 py-2 rounded hover:bg-gray-600"
+            onClick={handleSuggest}
+            type="button"
+          >
+            Random nick
+          </button>
+        </div>
+        <div className="flex gap-2 mt-4">
+          <button
+            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded"
+            onClick={() => onSubmit(name)}
+            disabled={!name.trim()}
+          >
+            Use nick
+          </button>
+          {seconds > 0 && (
+            <button
+              className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded"
+              onClick={() => onSubmit(suggested)}
+            >
+              Temporarily occupy: {suggested}
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );
