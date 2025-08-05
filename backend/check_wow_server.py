@@ -31,12 +31,12 @@ LAST_UPDATE_ID = 0
 REALMS = [
     {
         "name": "Kezan PVE (Debian Linux)",
-        "host": "198.244.165.233",
+        "host": "ns3200144.ip-198-244-165.eu",
         "port": 8208,
     },
     {
         "name": "Gurubashi PVP (Debian Linux)",
-        "host": "198.244.165.233",
+        "host": "ns3200144.ip-198-244-165.eu",
         "port": 8209,
     },
     {
