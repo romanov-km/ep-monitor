@@ -52,11 +52,11 @@ function getClientIP(req) {
     // Railway пишет клиента последним ⇒ берём right-most
     return xff.split(",").pop().trim();
   }
-  
+
   // 2. Fallback – X-Real-IP
   const xri = req.headers["x-real-ip"];
   if (xri) return xri.trim();
-  
+
   // 3. Совсем крайний случай – адрес прокси
   return req.socket.remoteAddress ?? "unknown";
 }
@@ -64,14 +64,14 @@ function getClientIP(req) {
 async function gracefulShutdown() {
   console.log('🛑 Начинаем graceful shutdown...');
   isShuttingDown = true;
-  
+
   // Закрываем все WebSocket соединения
   wss.clients.forEach((client) => {
     if (client.readyState === WebSocket.OPEN) {
       client.close(1000, 'Server shutdown');
     }
   });
-  
+
   // Ждем закрытия всех соединений
   await new Promise((resolve) => {
     wss.close(() => {
@@ -79,17 +79,17 @@ async function gracefulShutdown() {
       resolve();
     });
   });
-  
+
   // Закрываем Redis соединение
   await redisClient.quit();
   console.log('✅ Redis соединение закрыто');
-  
+
   // Закрываем HTTP сервер
   server.close(() => {
     console.log('✅ HTTP сервер закрыт');
     process.exit(0);
   });
-  
+
   // Принудительный выход через 10 секунд
   setTimeout(() => {
     console.log('⚠️ Принудительное завершение');
@@ -131,31 +131,31 @@ function clearHeartbeat(ws) {
 wss.on("connection", async (ws, req) => {
   const clientIP = getClientIP(req);
   console.log(`🔌 Новое подключение с IP: ${clientIP}`);
-  
+
   // Сохраняем IP в объекте соединения для дальнейшего использования
   ws.clientIP = clientIP;
-  
+
   // Проверяем DDoS защиту только если включена
   if (ENABLE_DDOS_PROTECTION) {
     const now = Date.now();
     const attempts = connectionAttempts.get(clientIP) || { count: 0, firstAttempt: now };
-    
+
     // Сбрасываем счетчик если прошло больше минуты
     if (now - attempts.firstAttempt > CONNECTION_WINDOW) {
       attempts.count = 0;
       attempts.firstAttempt = now;
     }
-    
+
     attempts.count++;
     connectionAttempts.set(clientIP, attempts);
-    
+
     // Проверяем лимиты
     if (attempts.count > MAX_CONNECTION_RATE) {
       console.log(`🚫 DDoS protection: Too many connection attempts from ${clientIP} (${attempts.count} in ${Math.round((now - attempts.firstAttempt) / 1000)}s)`);
       ws.close(1008, 'Rate limit exceeded');
       return;
     }
-    
+
     // Подсчитываем активные соединения с этого IP
     let activeConnectionsFromIP = 0;
     wss.clients.forEach(client => {
@@ -163,20 +163,20 @@ wss.on("connection", async (ws, req) => {
         activeConnectionsFromIP++;
       }
     });
-    
+
     if (activeConnectionsFromIP >= MAX_CONNECTIONS_PER_IP) {
       console.log(`🚫 DDoS protection: Too many active connections from ${clientIP} (${activeConnectionsFromIP})`);
       ws.close(1008, 'Too many connections');
       return;
     }
-    
+
     // Добавляем небольшую задержку при подозрительной активности
     if (attempts.count > MAX_CONNECTION_RATE * 0.7) {
       console.log(`⚠️ Rate limiting: Adding delay for ${clientIP} (${attempts.count} attempts)`);
       await new Promise(resolve => setTimeout(resolve, 1000)); // 1 секунда задержки
     }
   }
-  
+
   ws.on("message", async (msg) => {
     try {
       const data = JSON.parse(msg);
@@ -184,6 +184,7 @@ wss.on("connection", async (ws, req) => {
       if (data.type === "subscribe") {
         const realm = data.realm;
         const username = data.username;
+        const sessionId = data.sessionId || null;
 
         // Проверяем валидность данных
         if (!username || username.trim() === '') {
@@ -210,56 +211,56 @@ wss.on("connection", async (ws, req) => {
         }
 
         // Проверяем защиту от частых переподключений
-        const now = Date.now();
-        const lastConnection = recentConnections.get(username);
-        if (lastConnection && (now - lastConnection) < CONNECTION_COOLDOWN) {
-          console.log(`🚫 Blocking rapid reconnection for ${username} (${now - lastConnection}ms since last)`);
-          ws.send(JSON.stringify({
-            type: "error",
-            code: "rapid_reconnect",
-            message: "Please wait before reconnecting.",
-          }));
-          ws.close();
-          return;
-        }
-        recentConnections.set(username, now);
+        // const now = Date.now();
+        // const lastConnection = recentConnections.get(username);
+        // if (lastConnection && (now - lastConnection) < CONNECTION_COOLDOWN) {
+        //   console.log(`🚫 Blocking rapid reconnection for ${username} (${now - lastConnection}ms since last)`);
+        //   ws.send(JSON.stringify({
+        //     type: "error",
+        //     code: "rapid_reconnect",
+        //     message: "Please wait before reconnecting.",
+        //   }));
+        //   ws.close();
+        //   return;
+        // }
+        // recentConnections.set(username, now);
 
         // Если ник ожидает освобождения — отменяем таймер
- 
-if (busyNames.has(username)) {
-  // Проверка — если этот ник занят, но ник ожидает освобождения именно с этого же IP, разреши пересесть на ник
-  let isReclaim = false;
-  if (pendingNickRelease.has(username)) {
-    const info = pendingNickRelease.get(username);
-    if (info.ip === ws.clientIP) isReclaim = true;
-  }
-  if (isReclaim) {
-    clearTimeout(pendingNickRelease.get(username).timeoutId);
-    busyNames.delete(username);
-    pendingNickRelease.delete(username);
-  } else {
-    // Как было — отправляем ошибку
-    let waitMs = 0;
-    if (pendingNickRelease.has(username)) {
-      const timeoutObj = pendingNickRelease.get(username);
-      const timeLeft = Math.max(0, NICK_GRACE_PERIOD - (Date.now() - timeoutObj.start));
-      waitMs = timeLeft;
-    }
-    ws.send(JSON.stringify({
-      type: "error",
-      code: "duplicate_nick",
-      message: "This nickname is busy.",
-      wait: waitMs,
-    }));
-    ws.close();
-    return;
-  }
-}
+
+        if (busyNames.has(username)) {
+          // Проверка — если этот ник занят, но ник ожидает освобождения именно с этого же IP, разреши пересесть на ник
+          let isReclaim = false;
+          if (pendingNickRelease.has(username)) {
+            const info = pendingNickRelease.get(username);
+            if (info.sessionId === sessionId || info.ip === ws.clientIP) isReclaim = true;
+          }
+          if (isReclaim) {
+            clearTimeout(pendingNickRelease.get(username).timeoutId);
+            busyNames.delete(username);
+            pendingNickRelease.delete(username);
+          } else {
+            // Как было — отправляем ошибку
+            let waitMs = 0;
+            if (pendingNickRelease.has(username)) {
+              const timeoutObj = pendingNickRelease.get(username);
+              const timeLeft = Math.max(0, NICK_GRACE_PERIOD - (Date.now() - timeoutObj.start));
+              waitMs = timeLeft;
+            }
+            ws.send(JSON.stringify({
+              type: "error",
+              code: "duplicate_nick",
+              message: "This nickname is busy.",
+              wait: waitMs,
+            }));
+            ws.close();
+            return;
+          }
+        }
 
 
         ws.realm = realm;
         ws.username = username;
-       
+
 
         // Регистрируем новый сокет
         busyNames.add(username);
@@ -275,6 +276,7 @@ if (busyNames.has(username)) {
         ws.send(JSON.stringify({ type: "subscribe_success" }));
         console.log(`✅ Пользователь ${username} подключился к чату ${realm} ${clientIP}`);
 
+        ws.sessionId = sessionId;
         // Запускаем heartbeat для этого клиента
         setupHeartbeat(ws);
 
@@ -318,7 +320,7 @@ if (busyNames.has(username)) {
 
   ws.on("close", (code, reason) => {
     const realm = ws.realm;
-    const name  = usernames.get(ws);
+    const name = usernames.get(ws);
 
     // Очищаем heartbeat
     clearHeartbeat(ws);
@@ -332,7 +334,7 @@ if (busyNames.has(username)) {
         pendingNickRelease.delete(name);
         console.log(`⏳ Ник ${name} освобождён после grace period`);
       }, NICK_GRACE_PERIOD);
-      pendingNickRelease.set(name, { timeoutId, start: Date.now(), ip: ws.clientIP });
+      pendingNickRelease.set(name, { timeoutId, start: Date.now(), ip: ws.clientIP, sessionId: ws.sessionId || null });
     }
 
     if (realm && realmClients.has(realm)) {
@@ -355,11 +357,11 @@ if (busyNames.has(username)) {
 
   ws.on("error", (error) => {
     const realm = ws.realm;
-    const name  = usernames.get(ws);
-    
+    const name = usernames.get(ws);
+
     // Очищаем heartbeat
     clearHeartbeat(ws);
-    
+
     usernames.delete(ws);
     if (name) busyNames.delete(name);
 
@@ -368,12 +370,12 @@ if (busyNames.has(username)) {
       broadcastUserCount(realm);
       broadcastOnlineUsers(realm);
     }
-    
+
     // Логируем только если был зарегистрированный пользователь с дебаунсом
     if (name) {
       const now = Date.now();
       const lastLog = disconnectLogs.get(name);
-      
+
       if (!lastLog || (now - lastLog) > LOG_DEBOUNCE_TIME) {
         console.log(`Клиент отключился с ошибкой: ${name} - ${error.message}`);
         disconnectLogs.set(name, now);
@@ -409,7 +411,7 @@ function broadcastOnlineUsers(realm) {
 // Периодическая очистка мертвых соединений
 setInterval(() => {
   if (isShuttingDown) return; // Не очищаем во время shutdown
-  
+
   // Очищаем старые записи о подключениях (старше 1 минуты)
   const now = Date.now();
   for (const [username, timestamp] of recentConnections.entries()) {
@@ -417,14 +419,14 @@ setInterval(() => {
       recentConnections.delete(username);
     }
   }
-  
+
   // Очищаем старые записи о попытках подключения (старше 2 минут)
   for (const [ip, attempts] of connectionAttempts.entries()) {
     if (now - attempts.firstAttempt > 120000) {
       connectionAttempts.delete(ip);
     }
   }
-  
+
   wss.clients.forEach((client) => {
     if (client.readyState !== WebSocket.OPEN) {
       const name = usernames.get(client);
