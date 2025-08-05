@@ -211,10 +211,10 @@ const RealmChat: React.FC<RealmChatProps> = observer(
                         })}
                       </div>
                       <div
-                        className={`px-3 py-1 max-w-[80%] break-words rounded-lg shadow-sm text-sm
+                        className={`px-3 py-1 max-w-[90vw] sm:max-w-[80%] break-words break-all rounded-lg shadow-sm text-sm
                           ${isOwn ? "bg-green-700 text-white" : "bg-gray-700 text-gray-100"}`}
                       >
-                        <span className="font-semibold mr-1">{msg.user}</span>
+                        <span className="font-semibold mr-1 truncate max-w-[100px] inline-block align-middle">{msg.user}:</span>
                         {msg.text}
                       </div>
                     </div>
