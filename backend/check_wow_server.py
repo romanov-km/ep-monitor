@@ -19,7 +19,7 @@ except redis.exceptions.ConnectionError as e:
     exit(1)
 
 # Константы
-API_URL = "API_URL_SERVER"
+API_URL_SERVER= os.getenv("API_URL_SERVER")
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 DISCORD_WEBHOOK_URL = os.getenv("DISCORD_WEBHOOK_URL")
 HOST = "57.128.162.57"
