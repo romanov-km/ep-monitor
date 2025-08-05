@@ -50,8 +50,16 @@ const ChatPage = () => {
 
   return (
     <div className="p-4 font-mono">
-      {!username && <UsernameModal onSubmit={handleUsernameSubmit} error={null}/>}
-      {username && <RealmChat realm={realm} username={username} onUsernameSubmit={handleUsernameSubmit} onChatMessage={playChatSound} />}
+      {!username && <UsernameModal onSubmit={handleUsernameSubmit} error={undefined}/>}
+      {username && (
+        <RealmChat
+          realm={realm}
+          username={username}
+          onUsernameSubmit={handleUsernameSubmit}
+          onChatMessage={playChatSound}
+          wait={0}
+        />
+      )}
     </div>
   );
 };

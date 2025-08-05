@@ -10,7 +10,7 @@ interface RealmChatProps {
   username: string;
   onUsernameSubmit: (username: string) => void;
   onChatMessage?: () => void;
-  wait: number;
+  wait?: number | null;
 }
 
 /**
@@ -259,7 +259,7 @@ const RealmChat: React.FC<RealmChatProps> = observer(
 
         {/* username modal */}
         {showModal && (
-          <UsernameModal error={error ?? undefined} wait={wait} onSubmit={handleUsernameSubmit} currentUsername={username} />
+          <UsernameModal error={error ?? undefined} wait={wait ?? undefined} onSubmit={handleUsernameSubmit} currentUsername={username} />
         )}
       </div>
     );
