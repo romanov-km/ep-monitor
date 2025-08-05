@@ -227,24 +227,35 @@ wss.on("connection", async (ws, req) => {
         // Если ник ожидает освобождения — отменяем таймер
  
 if (busyNames.has(username)) {
-  let waitMs = 0;
+  // Проверка — если этот ник занят, но ник ожидает освобождения именно с этого же IP, разреши пересесть на ник
+  let isReclaim = false;
   if (pendingNickRelease.has(username)) {
-    const timeoutObj = pendingNickRelease.get(username);
-    const timeLeft = Math.max(
-      0,
-      NICK_GRACE_PERIOD - (Date.now() - timeoutObj.start)
-    );
-    waitMs = timeLeft;
+    const info = pendingNickRelease.get(username);
+    if (info.ip === ws.clientIP) isReclaim = true;
   }
-  ws.send(JSON.stringify({
-    type: "error",
-    code: "duplicate_nick",
-    message: "This nickname is busy.",
-    wait: waitMs,
-  }));
-  ws.close();
-  return;
+  if (isReclaim) {
+    clearTimeout(pendingNickRelease.get(username).timeoutId);
+    busyNames.delete(username);
+    pendingNickRelease.delete(username);
+  } else {
+    // Как было — отправляем ошибку
+    let waitMs = 0;
+    if (pendingNickRelease.has(username)) {
+      const timeoutObj = pendingNickRelease.get(username);
+      const timeLeft = Math.max(0, NICK_GRACE_PERIOD - (Date.now() - timeoutObj.start));
+      waitMs = timeLeft;
+    }
+    ws.send(JSON.stringify({
+      type: "error",
+      code: "duplicate_nick",
+      message: "This nickname is busy.",
+      wait: waitMs,
+    }));
+    ws.close();
+    return;
+  }
 }
+
 
         ws.realm = realm;
         ws.username = username;
@@ -321,7 +332,7 @@ if (busyNames.has(username)) {
         pendingNickRelease.delete(name);
         console.log(`⏳ Ник ${name} освобождён после grace period`);
       }, NICK_GRACE_PERIOD);
-      pendingNickRelease.set(name, timeoutId);
+      pendingNickRelease.set(name, { timeoutId, start: Date.now(), ip: ws.clientIP });
     }
 
     if (realm && realmClients.has(realm)) {
