@@ -59,7 +59,7 @@ def log_realm_status(realm_name, msg):
         print(f"⚠️ Redis ошибка при записи логов: {e}")
 
 # Мониторинг статуса реалма через API
-def monitor_realm(realm_name, msg):
+def monitor_realm(realm_name):
     last_status = None
 
     while True:
@@ -70,7 +70,7 @@ def monitor_realm(realm_name, msg):
         msg = f"{timestamp} Realm {realm_name} status: {icon} {status}"
         print(msg)
 
-        log_realm_status(msg)
+        log_realm_status(realm_name, msg)
 
         if last_status is not None and last_status != status:
             send_telegram_message_to_all(msg)
