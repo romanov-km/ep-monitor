@@ -65,7 +65,7 @@ def t(key, lang="ru", **kwargs):
 #new
 def get_realm_status():
     try:
-        resp = requests.get(API_URL, timeout=5)
+        resp = requests.get(API_URL_SERVER, timeout=5)
         data = resp.json()
         for realm in data.get("realms", []):
             if realm["name"] == REALM_NAME:
