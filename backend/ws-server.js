@@ -14,25 +14,17 @@ await redisClient.connect();
 
 const realmClients = new Map();
 const usernames = new Map();
-// const busyNames = new Set();
-// Grace period для освобождения ника
-const pendingNickRelease = new Map(); // name -> timeoutId
-const NICK_GRACE_PERIOD = 1000; // 1 секунд
-
-// Защита от частых переподключений
-const recentConnections = new Map(); // username -> timestamp
-const CONNECTION_COOLDOWN = 2000; // 2 секунды между подключениями
 
 // Защита от DDoS атак
 const connectionAttempts = new Map(); // IP -> { count, firstAttempt }
 const MAX_CONNECTIONS_PER_IP = 20; // Максимум 20 подключений с одного IP (было 5)
 const CONNECTION_WINDOW = 60000; // За 1 минуту
 const MAX_CONNECTION_RATE = 50; // Максимум 50 попыток подключения в минуту (было 10)
-const ENABLE_DDOS_PROTECTION = process.env.ENABLE_DDOS_PROTECTION !== 'false'; // Можно отключить через env
+const ENABLE_DDOS_PROTECTION = process.env.ENABLE_DDOS_PROTECTION !== "false"; // Можно отключить через env
 
 // Heartbeat механизм
 const clientHeartbeats = new Map();
-const HEARTBEAT_INTERVAL = 30000; // 30 секунд (было 60) - Railway edge-прокси закрывает через ~60с
+const HEARTBEAT_INTERVAL = 60000; // 30 секунд (было 60) - Railway edge-прокси закрывает через ~60с
 
 // Дебаунс для логов отключений
 const disconnectLogs = new Map();
@@ -41,10 +33,67 @@ const LOG_DEBOUNCE_TIME = 5000; // 5 секунд
 // Graceful shutdown
 let isShuttingDown = false;
 
-process.on('SIGTERM', gracefulShutdown);
-process.on('SIGINT', gracefulShutdown);
+process.on("SIGTERM", gracefulShutdown);
+process.on("SIGINT", gracefulShutdown);
 
-const blockedIPs = [''];
+const blockedIPs = [""];
+
+// Рассылка количества пользователей в чате
+function broadcastUserCount(realm) {
+  const count = realmClients.get(realm)?.size || 0;
+  realmClients.get(realm)?.forEach((client) => {
+    if (client.readyState === 1) {
+      client.send(JSON.stringify({ type: "user_count", count }));
+    }
+  });
+}
+// Чатерсы в чате имена
+function broadcastOnlineUsers(realm) {
+  const clients = realmClients.get(realm);
+
+  if (!clients) return;
+
+  const users = [...new Set([...clients].map((c) => c.username))];
+
+  clients.forEach((client) => {
+    if (client.readyState === 1) {
+      client.send(JSON.stringify({ type: "online_users", users }));
+    }
+  });
+}
+
+function removeClient(ws) {
+  const realm = ws.realm;
+  const name = usernames.get(ws);
+
+  clearHeartbeat(ws);
+  usernames.delete(ws);
+
+  if (realm && realmClients.has(realm)) {
+    realmClients.get(realm).delete(ws);
+    broadcastUserCount(realm);
+    broadcastOnlineUsers(realm);
+  }
+
+  //чатерс вышел
+  realmClients.get(realm).forEach(client => {
+    if (client.readyState === 1) {
+      client.send(JSON.stringify({ 
+        type: "user_left", 
+        user: name 
+      }));
+    }
+  });
+
+  if (name) {
+    const now = Date.now();
+    const lastLog = disconnectLogs.get(name);
+    if (!lastLog || now - lastLog > LOG_DEBOUNCE_TIME) {
+      console.log(`Клиент отключился: ${name}`);
+      disconnectLogs.set(name, now);
+    }
+  }
+}
 
 // Функция для получения IP адреса из HTTP запроса
 function getClientIP(req) {
@@ -64,37 +113,37 @@ function getClientIP(req) {
 }
 
 async function gracefulShutdown() {
-  console.log('🛑 Начинаем graceful shutdown...');
+  console.log("🛑 Начинаем graceful shutdown...");
   isShuttingDown = true;
 
   // Закрываем все WebSocket соединения
   wss.clients.forEach((client) => {
     if (client.readyState === WebSocket.OPEN) {
-      client.close(1000, 'Server shutdown');
+      client.close(1000, "Server shutdown");
     }
   });
 
   // Ждем закрытия всех соединений
   await new Promise((resolve) => {
     wss.close(() => {
-      console.log('✅ WebSocket сервер закрыт');
+      console.log("✅ WebSocket сервер закрыт");
       resolve();
     });
   });
 
   // Закрываем Redis соединение
   await redisClient.quit();
-  console.log('✅ Redis соединение закрыто');
+  console.log("✅ Redis соединение закрыто");
 
   // Закрываем HTTP сервер
   server.close(() => {
-    console.log('✅ HTTP сервер закрыт');
+    console.log("✅ HTTP сервер закрыт");
     process.exit(0);
   });
 
   // Принудительный выход через 10 секунд
   setTimeout(() => {
-    console.log('⚠️ Принудительное завершение');
+    console.log("⚠️ Принудительное завершение");
     process.exit(1);
   }, 10000);
 }
@@ -102,11 +151,12 @@ async function gracefulShutdown() {
 // Функция для установки heartbeat для клиента
 function setupHeartbeat(ws) {
   ws.isAlive = true;
-  ws.on('pong', () => {
+  ws.on("pong", () => {
     ws.isAlive = true;
   });
   const heartbeatId = setInterval(() => {
     if (ws.isAlive === false) {
+      console.log(`[HEARTBEAT] Terminating ws for ${ws.username} (${ws.clientIP}) — no pong`);
       ws.terminate();
       return;
     }
@@ -146,7 +196,10 @@ wss.on("connection", async (ws, req) => {
   // Проверяем DDoS защиту только если включена
   if (ENABLE_DDOS_PROTECTION) {
     const now = Date.now();
-    const attempts = connectionAttempts.get(clientIP) || { count: 0, firstAttempt: now };
+    const attempts = connectionAttempts.get(clientIP) || {
+      count: 0,
+      firstAttempt: now,
+    };
 
     // Сбрасываем счетчик если прошло больше минуты
     if (now - attempts.firstAttempt > CONNECTION_WINDOW) {
@@ -159,29 +212,40 @@ wss.on("connection", async (ws, req) => {
 
     // Проверяем лимиты
     if (attempts.count > MAX_CONNECTION_RATE) {
-      console.log(`🚫 DDoS protection: Too many connection attempts from ${clientIP} (${attempts.count} in ${Math.round((now - attempts.firstAttempt) / 1000)}s)`);
-      ws.close(1008, 'Rate limit exceeded');
+      console.log(
+        `🚫 DDoS protection: Too many connection attempts from ${clientIP} (${
+          attempts.count
+        } in ${Math.round((now - attempts.firstAttempt) / 1000)}s)`
+      );
+      ws.close(1008, "Rate limit exceeded");
       return;
     }
 
     // Подсчитываем активные соединения с этого IP
     let activeConnectionsFromIP = 0;
-    wss.clients.forEach(client => {
-      if (client.clientIP === clientIP && client.readyState === WebSocket.OPEN) {
+    wss.clients.forEach((client) => {
+      if (
+        client.clientIP === clientIP &&
+        client.readyState === WebSocket.OPEN
+      ) {
         activeConnectionsFromIP++;
       }
     });
 
     if (activeConnectionsFromIP >= MAX_CONNECTIONS_PER_IP) {
-      console.log(`🚫 DDoS protection: Too many active connections from ${clientIP} (${activeConnectionsFromIP})`);
-      ws.close(1008, 'Too many connections');
+      console.log(
+        `🚫 DDoS protection: Too many active connections from ${clientIP} (${activeConnectionsFromIP})`
+      );
+      ws.close(1008, "Too many connections");
       return;
     }
 
     // Добавляем небольшую задержку при подозрительной активности
     if (attempts.count > MAX_CONNECTION_RATE * 0.7) {
-      console.log(`⚠️ Rate limiting: Adding delay for ${clientIP} (${attempts.count} attempts)`);
-      await new Promise(resolve => setTimeout(resolve, 1000)); // 1 секунда задержки
+      console.log(
+        `⚠️ Rate limiting: Adding delay for ${clientIP} (${attempts.count} attempts)`
+      );
+      await new Promise((resolve) => setTimeout(resolve, 1000)); // 1 секунда задержки
     }
   }
 
@@ -195,25 +259,31 @@ wss.on("connection", async (ws, req) => {
         const sessionId = data.sessionId || null;
 
         // Проверяем валидность данных
-        if (!username || username.trim() === '') {
+        if (!username || username.trim() === "") {
           // Убираем детальное логирование для уменьшения спама
-          ws.send(JSON.stringify({
-            type: "error",
-            code: "invalid_username",
-            message: "Username is required.",
-          }));
+          ws.send(
+            JSON.stringify({
+              type: "error",
+              code: "invalid_username",
+              message: "Username is required.",
+            })
+          );
           ws.close();
           return;
         }
 
         // Дополнительная защита от ботов - проверяем длину и символы username
         if (username.length < 1 || username.length > 200) {
-          console.log(`🚫 Bot protection: Invalid username length from IP ${ws.clientIP}: "${username}"`);
-          ws.send(JSON.stringify({
-            type: "error",
-            code: "invalid_username",
-            message: "Username must be 1-200 characters long.",
-          }));
+          console.log(
+            `🚫 Bot protection: Invalid username length from IP ${ws.clientIP}: "${username}"`
+          );
+          ws.send(
+            JSON.stringify({
+              type: "error",
+              code: "invalid_username",
+              message: "Username must be 1-200 characters long.",
+            })
+          );
           ws.close();
           return;
         }
@@ -236,7 +306,6 @@ wss.on("connection", async (ws, req) => {
         ws.realm = realm;
         ws.username = username;
 
-
         // Регистрируем новый сокет
         // busyNames.add(username);
         usernames.set(ws, username);
@@ -249,7 +318,20 @@ wss.on("connection", async (ws, req) => {
 
         // Отправляем подтверждение успешной подписки
         ws.send(JSON.stringify({ type: "subscribe_success" }));
-        console.log(`✅ Пользователь ${username} подключился к чату ${realm} ${clientIP}`);
+    
+        console.log(
+          `✅ Пользователь ${username} подключился к чату ${realm} ${clientIP}`
+        );
+
+        //новый чатерс зашел в чат отправили месагу клиенту
+        realmClients.get(realm).forEach(client => {
+          if (client !== ws && client.readyState === 1) {
+            client.send(JSON.stringify({ 
+              type: "user_joined", 
+              user: username 
+            }));
+          }
+        });
 
         ws.sessionId = sessionId;
         // Запускаем heartbeat для этого клиента
@@ -293,87 +375,23 @@ wss.on("connection", async (ws, req) => {
     }
   });
 
-  ws.on("close", (code, reason) => {
-    const realm = ws.realm;
-    const name = usernames.get(ws);
-
-    // Очищаем heartbeat
-    clearHeartbeat(ws);
-
-    if (realm && realmClients.has(realm)) {
-      realmClients.get(realm).delete(ws);
-      broadcastUserCount(realm);
-      broadcastOnlineUsers(realm);
-    }
-
-    // Логируем только если был зарегистрированный пользователь с дебаунсом
-    if (name) {
-      const now = Date.now();
-      const lastLog = disconnectLogs.get(name);
-
-      if (!lastLog || (now - lastLog) > LOG_DEBOUNCE_TIME) {
-        console.log(`Клиент отключился: ${name} (код: ${code}, причина: ${reason || 'не указана'})`);
-        disconnectLogs.set(name, now);
-      }
-    }
+  ws.on("close", () => {
+    removeClient(ws)
+    console.log(
+    `[CLOSE] ${ws.username || "unknown"} (${ws.clientIP || "-"}) — code: ${code}, reason: ${reason}`
+  );
   });
 
   ws.on("error", (error) => {
-    const realm = ws.realm;
-    const name = usernames.get(ws);
-
-    // Очищаем heartbeat
-    clearHeartbeat(ws);
-
-    usernames.delete(ws);
-
-    if (realm && realmClients.has(realm)) {
-      realmClients.get(realm).delete(ws);
-      broadcastUserCount(realm);
-      broadcastOnlineUsers(realm);
-    }
-
-    // Логируем только если был зарегистрированный пользователь с дебаунсом
-    if (name) {
-      const now = Date.now();
-      const lastLog = disconnectLogs.get(name);
-
-      if (!lastLog || (now - lastLog) > LOG_DEBOUNCE_TIME) {
-        console.log(`Клиент отключился с ошибкой: ${name} - ${error.message}`);
-        disconnectLogs.set(name, now);
-      }
-    }
+    console.error(`[ERROR] ws for ${ws.username} (${ws.clientIP}):`, error);
   });
 });
 
-// Рассылка количества пользователей в чате
-function broadcastUserCount(realm) {
-  const count = realmClients.get(realm)?.size || 0;
-  realmClients.get(realm)?.forEach((client) => {
-    if (client.readyState === 1) {
-      client.send(JSON.stringify({ type: "user_count", count }));
-    }
-  });
-}
-// Чатерсы в чате имена
-function broadcastOnlineUsers(realm) {
-  const clients = realmClients.get(realm);
-
-  if (!clients) return;
-
-  const users = [...new Set([...clients].map((c) => c.username))];
-
-  clients.forEach((client) => {
-    if (client.readyState === 1) {
-      client.send(JSON.stringify({ type: "online_users", users }));
-    }
-  });
-}
-
-
 server.listen(PORT, () => {
   console.log(`✅ WebSocket сервер запущен на порту ${PORT}`);
-  console.log(`🛡️ DDoS protection: ${ENABLE_DDOS_PROTECTION ? 'ENABLED' : 'DISABLED'}`);
+  console.log(
+    `🛡️ DDoS protection: ${ENABLE_DDOS_PROTECTION ? "ENABLED" : "DISABLED"}`
+  );
   if (ENABLE_DDOS_PROTECTION) {
     console.log(`   - Max connections per IP: ${MAX_CONNECTIONS_PER_IP}`);
     console.log(`   - Max connection rate: ${MAX_CONNECTION_RATE} per minute`);
