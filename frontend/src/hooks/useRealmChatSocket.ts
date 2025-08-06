@@ -6,7 +6,6 @@ interface ChatEntry {
   realm: string;
   user: string;
   text: string;
-  type: string;
 }
 
 interface UseRealmChatSocketOptions {
@@ -124,7 +123,6 @@ export const useRealmChatSocket = (
       const data = JSON.parse(event.data);
 
       switch (data.type) {
-
         case "error":
           console.error("Server error:", data.message, "Code:", data.code);
           if (data.code === "duplicate_nick") {
@@ -152,24 +150,19 @@ export const useRealmChatSocket = (
             safeClose();
           }
           break;
-
         case "history":
           setMessages(data.entries);
           break;
-
         case "new_message":
           setMessages((prev) => [...prev, data.entry]);
           options?.onNewMessage?.(data.entry);
           break;
-
         case "user_count":
           setUserCount(data.count);
           break;
-
         case "online_users":
           setOnlineUsers(data.users);
           break;
-
         case "subscribe_success":
           // Успешная подписка - сбрасываем флаг блокировки
           reconnectBlockedRef.current = false;

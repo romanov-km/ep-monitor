@@ -47,7 +47,11 @@ export const translations = {
         achivment1: "Первый удар",
         petUpgrade: "Прокачать питомца",
         petStones: "Камни пета",
-      }
+      },
+      patchUnknown: "Нет данных о патче",
+      patchCurrent: "Текущий патч",
+      patchUploaded: "Патч загружен",
+      patchDetected: "Патч опредлен"
     },
     en: {
       title: "📡 WoW-server Project Epoch",
@@ -97,7 +101,11 @@ export const translations = {
         achivment1: "First Click",
         petUpgrade: "Upgrade Pet",
         petStones: "Pet Stones",
-      }
+      },
+      patchUnknown: "No patch data",
+      patchCurrent: "Current patch",
+      patchUploaded: "Patch uploaded",
+      patchDetected: "Patch detected"
     },
   };
   
