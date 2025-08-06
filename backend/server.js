@@ -13,6 +13,8 @@ if (!process.env.REDIS_URL) {
   process.exit(1);
 }
 
+app.use(cors());
+
 const redis = createClient({ url: process.env.REDIS_URL });
 redis.connect().catch((err) => {
   console.error("❌ Ошибка подключения к Redis:", err);
@@ -45,7 +47,7 @@ app.get("/api/patch", async (req, res) => {
   }
 });
 
-app.use(cors());
+
 
 app.get("/api/status", async (req, res) => {
   try {
