@@ -19,6 +19,7 @@ import { DebugPanel } from "../components/DebugPanel";
 import { soundStore } from "../stores/soundStore"; // Импортируем новый store для звука
 import { observer } from "mobx-react-lite";
 import PatchVersion from "../components/PatchVersion";
+import PatchModal from "../components/PatchModal";
 
 interface StatusEntry {
   time: string;
@@ -286,19 +287,12 @@ const App = observer(function App() {
         language={language}
       />
 
-      {showPatchBanner && (
-        <div className="bg-blue-700 text-white px-4 py-3 rounded mb-2 shadow animate-pulse">
-          🆕{" "}
-          {language === "ru"
-            ? "Вышла новая версия патча!"
-            : "New patch released!"}{" "}
-          <button
-            onClick={() => setShowPatchBanner(false)}
-            className="ml-4 underline"
-          >
-            OK
-          </button>
-        </div>
+      {showPatchBanner && patchInfo.version && (
+        <PatchModal
+          version={patchInfo.version}
+          onClose={() => setShowPatchBanner(false)}
+          language={language}
+        />
       )}
 
       <RealmStatusList />
