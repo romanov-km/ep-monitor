@@ -38,6 +38,29 @@ process.on("SIGINT", gracefulShutdown);
 
 const blockedIPs = [""];
 
+const chatRateLimits = new Map(); // ws -> { count, lastMsg }
+
+function isAllowedToChat(ws) {
+  const now = Date.now();
+  const limit = 10; // max 10 сообщений в 10 сек
+  const window = 10000;
+
+  if (!chatRateLimits.has(ws)) chatRateLimits.set(ws, { count: 1, lastMsg: now });
+  else {
+    const entry = chatRateLimits.get(ws);
+    if (now - entry.lastMsg > window) {
+      entry.count = 1;
+      entry.lastMsg = now;
+    } else {
+      entry.count++;
+      entry.lastMsg = now;
+    }
+    if (entry.count > limit) return false;
+  }
+  return true;
+}
+
+
 // Рассылка количества пользователей в чате
 function broadcastUserCount(realm) {
   const count = realmClients.get(realm)?.size || 0;
@@ -62,10 +85,25 @@ function broadcastOnlineUsers(realm) {
   });
 }
 
+// Функция для очистки heartbeat
+function clearHeartbeat(ws) {
+  ws.isAlive = false;
+  const heartbeatId = clientHeartbeats.get(ws);
+  if (heartbeatId) {
+    clearInterval(heartbeatId);
+    clientHeartbeats.delete(ws);
+  }
+  if (ws.heartbeatTimeoutId) {
+    clearTimeout(ws.heartbeatTimeoutId);
+    ws.heartbeatTimeoutId = null;
+  }
+}
+
 function removeClient(ws) {
   const realm = ws.realm;
   const name = usernames.get(ws);
-
+  
+  
   clearHeartbeat(ws);
   usernames.delete(ws);
 
@@ -74,17 +112,7 @@ function removeClient(ws) {
     broadcastUserCount(realm);
     broadcastOnlineUsers(realm);
   }
-
-  //чатерс вышел
-  realmClients.get(realm).forEach(client => {
-    if (client.readyState === 1) {
-      client.send(JSON.stringify({ 
-        type: "user_left", 
-        user: name 
-      }));
-    }
-  });
-
+  ws.isSubscribed = false;
   if (name) {
     const now = Date.now();
     const lastLog = disconnectLogs.get(name);
@@ -146,38 +174,6 @@ async function gracefulShutdown() {
     console.log("⚠️ Принудительное завершение");
     process.exit(1);
   }, 10000);
-}
-
-// Функция для установки heartbeat для клиента
-function setupHeartbeat(ws) {
-  ws.isAlive = true;
-  ws.on("pong", () => {
-    ws.isAlive = true;
-  });
-  const heartbeatId = setInterval(() => {
-    if (ws.isAlive === false) {
-      console.log(`[HEARTBEAT] Terminating ws for ${ws.username} (${ws.clientIP}) — no pong`);
-      ws.terminate();
-      return;
-    }
-    ws.isAlive = false;
-    ws.ping();
-  }, HEARTBEAT_INTERVAL);
-  clientHeartbeats.set(ws, heartbeatId);
-}
-
-// Функция для очистки heartbeat
-function clearHeartbeat(ws) {
-  ws.isAlive = false;
-  const heartbeatId = clientHeartbeats.get(ws);
-  if (heartbeatId) {
-    clearInterval(heartbeatId);
-    clientHeartbeats.delete(ws);
-  }
-  if (ws.heartbeatTimeoutId) {
-    clearTimeout(ws.heartbeatTimeoutId);
-    ws.heartbeatTimeoutId = null;
-  }
 }
 
 wss.on("connection", async (ws, req) => {
@@ -249,131 +245,117 @@ wss.on("connection", async (ws, req) => {
     }
   }
 
-  ws.on("message", async (msg) => {
-    try {
-      const data = JSON.parse(msg);
+ws.on("message", async (msg) => {
+  try {
+    const data = JSON.parse(msg);
 
-      if (data.type === "subscribe") {
-        const realm = data.realm;
-        const username = data.username;
-        const sessionId = data.sessionId || null;
+    // Ручной пинг
+    if (data.type === "ping") {
+      ws.send(JSON.stringify({ type: "pong" }));
+      return;
+    }
 
-        // Проверяем валидность данных
-        if (!username || username.trim() === "") {
-          // Убираем детальное логирование для уменьшения спама
-          ws.send(
-            JSON.stringify({
-              type: "error",
-              code: "invalid_username",
-              message: "Username is required.",
-            })
-          );
-          ws.close();
-          return;
-        }
-
-        // Дополнительная защита от ботов - проверяем длину и символы username
-        if (username.length < 1 || username.length > 200) {
-          console.log(
-            `🚫 Bot protection: Invalid username length from IP ${ws.clientIP}: "${username}"`
-          );
-          ws.send(
-            JSON.stringify({
-              type: "error",
-              code: "invalid_username",
-              message: "Username must be 1-200 characters long.",
-            })
-          );
-          ws.close();
-          return;
-        }
-
-        // //Проверяем защиту от частых переподключений
-        // const now = Date.now();
-        // const lastConnection = recentConnections.get(username);
-        // if (lastConnection && (now - lastConnection) < CONNECTION_COOLDOWN) {
-        //   console.log(`🚫 Blocking rapid reconnection for ${username} (${now - lastConnection}ms since last)`);
-        //   ws.send(JSON.stringify({
-        //     type: "error",
-        //     code: "rapid_reconnect",
-        //     message: "Please wait before reconnecting.",
-        //   }));
-        //   ws.close();
-        //   return;
-        // }
-        // recentConnections.set(username, now);
-
-        ws.realm = realm;
-        ws.username = username;
-
-        // Регистрируем новый сокет
-        // busyNames.add(username);
-        usernames.set(ws, username);
-
-        // Добавляем клиента в список
-        if (!realmClients.has(realm)) {
-          realmClients.set(realm, new Set());
-        }
-        realmClients.get(realm).add(ws);
-
-        // Отправляем подтверждение успешной подписки
-        ws.send(JSON.stringify({ type: "subscribe_success" }));
-    
-        console.log(
-          `✅ Пользователь ${username} подключился к чату ${realm} ${clientIP}`
-        );
-
-        //новый чатерс зашел в чат отправили месагу клиенту
-        realmClients.get(realm).forEach(client => {
-          if (client !== ws && client.readyState === 1) {
-            client.send(JSON.stringify({ 
-              type: "user_joined", 
-              user: username 
-            }));
-          }
-        });
-
-        ws.sessionId = sessionId;
-        // Запускаем heartbeat для этого клиента
-        setupHeartbeat(ws);
-
-        // Отправляем историю
-        const raw = await redisClient.lRange(`chat:${realm}`, 0, 49);
-        const entries = raw.reverse().map((line) => JSON.parse(line));
-
-        if (ws.readyState === WebSocket.OPEN) {
-          ws.send(JSON.stringify({ type: "history", entries }));
-        }
-
-        // Рассылаем обновлённый онлайн
-        broadcastUserCount(realm);
-        broadcastOnlineUsers(realm);
+    // ===== ОБРАБОТКА ПОДПИСКИ =====
+    if (data.type === "subscribe") {
+      // Защита от двойной подписки
+      if (ws.isSubscribed) {
+        ws.send(JSON.stringify({
+          type: "error",
+          code: "already_subscribed",
+          message: "Already subscribed"
+        }));
         return;
       }
 
-      // Новое сообщение
-      const { realm, user, text } = data;
-      if (!realm || !user || !text) return;
+      const realm = data.realm;
+      const username = data.username;
 
-      const entry = {
-        time: new Date().toISOString(),
-        realm,
-        user,
-        text,
-      };
+      // Проверяем валидность данных
+      if (!username || username.trim() === "") {
+        ws.send(
+          JSON.stringify({
+            type: "error",
+            code: "invalid_username",
+            message: "Username is required.",
+          })
+        );
+        ws.close();
+        return;
+      }
 
-      await redisClient.lPush(`chat:${realm}`, JSON.stringify(entry));
-      await redisClient.lTrim(`chat:${realm}`, 0, 99);
+      // Дополнительная защита от ботов - проверяем длину username
+      if (username.length < 1 || username.length > 200) {
+        ws.send(
+          JSON.stringify({
+            type: "error",
+            code: "invalid_username",
+            message: "Username must be 1-200 characters long.",
+          })
+        );
+        ws.close();
+        return;
+      }
 
-      wss.clients.forEach((client) => {
-        if (client.readyState === 1 && client.realm === realm) {
-          client.send(JSON.stringify({ type: "new_message", entry }));
-        }
-      });
-    } catch (e) {
-      console.error("Ошибка обработки сообщения:", e);
+      ws.realm = realm;
+      ws.username = username;
+
+      usernames.set(ws, username);
+
+      // Добавляем клиента в список
+      if (!realmClients.has(realm)) {
+        realmClients.set(realm, new Set());
+      }
+      realmClients.get(realm).add(ws);
+
+      // Отправляем подтверждение успешной подписки
+      ws.send(JSON.stringify({ type: "subscribe_success" }));
+
+      ws.isSubscribed = true; // <-- СТАВИМ ФЛАГ ПОСЛЕ УСПЕШНОЙ ПОДПИСКИ
+      console.log(
+        `✅ Пользователь ${username} подключился к чату ${realm} ${ws.clientIP}`
+      );
+
+      // История
+      const raw = await redisClient.lRange(`chat:${realm}`, 0, 49);
+      const entries = raw.reverse().map((line) => JSON.parse(line));
+      if (ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({ type: "history", entries }));
+      }
+
+      broadcastUserCount(realm);
+      broadcastOnlineUsers(realm);
+      return;
     }
-  });
+
+    // Новое сообщение
+    const { realm, user, text } = data;
+    if (!realm || !user || !text) return;
+
+    const entry = {
+      time: new Date().toISOString(),
+      realm,
+      user,
+      text,
+    };
+
+    if (data.type !== "subscribe" && !isAllowedToChat(ws)) {
+      ws.send(JSON.stringify({ type: "error", code: "flood", message: "Too many messages" }));
+      return;
+    }
+
+    await redisClient.lPush(`chat:${realm}`, JSON.stringify(entry));
+    await redisClient.lTrim(`chat:${realm}`, 0, 99);
+
+    wss.clients.forEach((client) => {
+      if (client.readyState === 1 && client.realm === realm) {
+        client.send(JSON.stringify({ type: "new_message", entry }));
+      }
+    });
+  } catch (e) {
+    console.error("Ошибка обработки сообщения:", e);
+  }
+});
+
 
   ws.on("close", (code, reason) => {
     removeClient(ws)
@@ -385,7 +367,25 @@ wss.on("connection", async (ws, req) => {
   ws.on("error", (error) => {
     console.error(`[ERROR] ws for ${ws.username} (${ws.clientIP}):`, error);
   });
+
+  ws.on("pong", () => {
+  ws.isAlive = true;
+  console.log(`[HEARTBEAT] PONG от клиента: ${ws.username} (${ws.clientIP})`);
 });
+});
+
+setInterval(() => {
+  wss.clients.forEach(ws => {
+    if (ws.isAlive === false) {
+      console.log(`[HEARTBEAT] Terminating ws for ${ws.username} (${ws.clientIP}) — no pong`);
+      return ws.terminate();
+    }
+    ws.isAlive = false;
+    ws.ping();
+  });
+}, 30000);
+
+
 
 server.listen(PORT, () => {
   console.log(`✅ WebSocket сервер запущен на порту ${PORT}`);
