@@ -17,7 +17,7 @@ const usernames = new Map();
 const busyNames = new Set();
 // Grace period для освобождения ника
 const pendingNickRelease = new Map(); // name -> timeoutId
-const NICK_GRACE_PERIOD = 10000; // 10 секунд
+const NICK_GRACE_PERIOD = 1000; // 1 секунд
 
 // Защита от частых переподключений
 const recentConnections = new Map(); // username -> timestamp
@@ -234,9 +234,10 @@ wss.on("connection", async (ws, req) => {
         // recentConnections.set(username, now);
 
         // Если ник ожидает освобождения — отменяем таймер
-
+        console.log({username, busy: busyNames.has(username), isPending: pendingNickRelease.has(username)});
         if (busyNames.has(username)) {
           // Проверка — если этот ник занят, но ник ожидает освобождения именно с этого же IP, разреши пересесть на ник
+          console.log('Пытаюсь взять ник:', username, 'Мой IP:', ws.clientIP, 'pending:', pendingNickRelease.get(username)?.ip);
           let isReclaim = false;
           if (pendingNickRelease.has(username)) {
             const info = pendingNickRelease.get(username);
@@ -336,7 +337,7 @@ wss.on("connection", async (ws, req) => {
     usernames.delete(ws);
     if (name) {
       // Вместо немедленного удаления ника — задержка
-      if (pendingNickRelease.has(name)) clearTimeout(pendingNickRelease.get(name));
+      if (pendingNickRelease.has(name)) clearTimeout(pendingNickRelease.get(name).timeoutId);
       const timeoutId = setTimeout(() => {
         busyNames.delete(name);
         pendingNickRelease.delete(name);
