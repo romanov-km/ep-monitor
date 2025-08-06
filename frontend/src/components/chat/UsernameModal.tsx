@@ -32,6 +32,14 @@ const UsernameModal: React.FC<UsernameModalProps> = ({ error, wait, onSubmit, cu
     setName(newNick);
   };
 
+  useEffect(() => {
+    // Автозаполнение из localStorage
+    if (!name && typeof window !== 'undefined') {
+      const last = localStorage.getItem('username');
+      if (last) setName(last);
+    }
+  }, []);
+
   return (
     <div className="fixed inset-0 flex items-center justify-center bg-black/70 z-50">
       <div className="bg-gray-900 border border-gray-700 rounded-xl p-6 shadow-lg min-w-[320px]">

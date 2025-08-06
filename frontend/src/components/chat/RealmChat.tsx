@@ -80,7 +80,8 @@ const RealmChat: React.FC<RealmChatProps> = observer(
         }
       };
       document.addEventListener("visibilitychange", stopBlinkOnFocus);
-      return () => document.removeEventListener("visibilitychange", stopBlinkOnFocus);
+      return () =>
+        document.removeEventListener("visibilitychange", stopBlinkOnFocus);
     }, [stopTitleBlink]);
 
     const handleUsernameSubmit = useCallback(
@@ -126,14 +127,30 @@ const RealmChat: React.FC<RealmChatProps> = observer(
       const base = "px-2 py-0.5 rounded text-xs font-medium";
       switch (connectionStatus) {
         case "connecting":
-          return <span className={`${base} bg-yellow-700 text-yellow-300`}>Connecting…</span>;
+          return (
+            <span className={`${base} bg-yellow-700 text-yellow-300`}>
+              Connecting…
+            </span>
+          );
         case "reconnecting":
-          return <span className={`${base} bg-orange-700 text-orange-300`}>Reconnecting…</span>;
+          return (
+            <span className={`${base} bg-orange-700 text-orange-300`}>
+              Reconnecting…
+            </span>
+          );
         case "disconnected":
-          return <span className={`${base} bg-red-700 text-red-300`}>Disconnected</span>;
+          return (
+            <span className={`${base} bg-red-700 text-red-300`}>
+              Disconnected
+            </span>
+          );
         case "connected":
         default:
-          return <span className={`${base} bg-green-700 text-green-300`}>Connected</span>;
+          return (
+            <span className={`${base} bg-green-700 text-green-300`}>
+              Connected
+            </span>
+          );
       }
     };
 
@@ -161,7 +178,9 @@ const RealmChat: React.FC<RealmChatProps> = observer(
             >
               Retry now
             </button>
-            <span className="text-xs text-orange-400">Attempting to reconnect…</span>
+            <span className="text-xs text-orange-400">
+              Attempting to reconnect…
+            </span>
           </div>
         )}
 
@@ -173,7 +192,9 @@ const RealmChat: React.FC<RealmChatProps> = observer(
             >
               Reconnect
             </button>
-            <span className="text-xs text-yellow-500">Tip: avoid frequent page reloads</span>
+            <span className="text-xs text-yellow-500">
+              Tip: avoid frequent page reloads
+            </span>
           </div>
         )}
 
@@ -198,7 +219,9 @@ const RealmChat: React.FC<RealmChatProps> = observer(
                   return (
                     <div
                       key={`${msg.time}-${msg.user}`}
-                      className={`flex flex-col max-w-full ${isOwn ? "items-end" : "items-start"}`}
+                      className={`flex flex-col max-w-full ${
+                        isOwn ? "items-end" : "items-start"
+                      }`}
                     >
                       <div className="text-[10px] text-gray-500 mb-0.5">
                         {new Date(msg.time).toLocaleString(undefined, {
@@ -212,9 +235,15 @@ const RealmChat: React.FC<RealmChatProps> = observer(
                       </div>
                       <div
                         className={`px-3 py-1 max-w-[90vw] sm:max-w-[80%] break-words break-all rounded-lg shadow-sm text-sm
-                          ${isOwn ? "bg-green-700 text-white" : "bg-gray-700 text-gray-100"}`}
+                          ${
+                            isOwn
+                              ? "bg-green-700 text-white"
+                              : "bg-gray-700 text-gray-100"
+                          }`}
                       >
-                        <span className="font-semibold mr-1 truncate max-w-[100px] inline-block align-middle">{msg.user}:</span>
+                        <span className="font-semibold mr-1 truncate max-w-[100px] inline-block align-middle">
+                          {msg.user}:
+                        </span>
                         {msg.text}
                       </div>
                     </div>
@@ -254,12 +283,21 @@ const RealmChat: React.FC<RealmChatProps> = observer(
           </div>
 
           {/* users panel */}
-          <UsersPanel userCount={userCount} onlineUsers={onlineUsers} username={username} />
+          <UsersPanel
+            userCount={userCount}
+            onlineUsers={onlineUsers}
+            username={username}
+          />
         </div>
 
         {/* username modal */}
         {showModal && (
-          <UsernameModal error={error ?? undefined} wait={wait ?? undefined} onSubmit={handleUsernameSubmit} currentUsername={username} />
+          <UsernameModal
+            error={error ?? undefined}
+            wait={wait ?? undefined}
+            onSubmit={handleUsernameSubmit}
+            currentUsername={username}
+          />
         )}
       </div>
     );
