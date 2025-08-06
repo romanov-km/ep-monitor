@@ -1,6 +1,6 @@
 export const translations = {
     ru: {
-      title: "📡 WoW-сервер Project Epoch",
+      title: "Project Epoch Status — статус аутентификации и игровых серверов в реальном времени",
       telegramHeader: "Следи за статусом сервера в Telegram:",
       tgShow: "Показать Telegram-бота",
       tgHide: "Скрыть Telegram-бота",
@@ -54,7 +54,7 @@ export const translations = {
       patchDetected: "Патч опредлен"
     },
     en: {
-      title: "📡 WoW-server Project Epoch",
+      title: "Project Epoch Status - real-time status of authentication and game servers",
       telegramHeader: "Track server status on Telegram:",
       tgShow: "Show Telegram-bot",
       tgHide: "Hide Telegram-bot",

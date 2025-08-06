@@ -20,6 +20,7 @@ import { soundStore } from "../stores/soundStore"; // Импортируем н�
 import { observer } from "mobx-react-lite";
 import PatchVersion from "../components/PatchVersion";
 import PatchModal from "../components/PatchModal";
+import { Helmet } from "react-helmet";
 
 interface StatusEntry {
   time: string;
@@ -203,130 +204,151 @@ const App = observer(function App() {
   }, []);
 
   return (
-    <div className="p-4 font-mono max-w-screen-lg mx-auto">
-      <SoundSettings />
+    <>
+      <Helmet>
+        <title>Project Epoch | status tracker, chat, patches, guides</title>
+        <meta
+          name="description"
+          content="Track the online status of Project Epoch WoW servers. Get notifications, join the chat, and play the idle game!"
+        />
+        <meta
+          property="og:title"
+          content="Project Epoch | status tracker & chat"
+        />
+        <meta
+          property="og:description"
+          content="Project Epoch — real-time server status, patch updates, player chat, and instant notifications!"
+        />
+        <meta property="og:image" content="https://project-epoch.ru/vite.svg" />
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content="https://project-epoch.ru/" />
+      </Helmet>
 
-      <div
-        className={`p-2 rounded mb-4 text-sm ${
-          isAuthUp
-            ? "bg-green-700 text-white"
-            : "bg-red-600 text-white animate-pulse"
-        }`}
-      >
-        {language === "ru" ? (
-          <>
-            {isAuthUp ? t.authUp : t.authDown} {t.notifications}:{" "}
-            {soundStore.soundSettings.realmUp.enabled &&
-            !soundStore.userInteracted
-              ? "ВКЛ 🔔"
-              : "ВЫКЛ 🔕"}
-            <div>
-              {!soundStore.userInteracted && (
-                <div className="bg-yellow-600/60 text-white px-3 py-2 rounded mb-3 text-sm shadow animate-pulse">
-                  👆 Для активации звуковых уведомлений кликните по странице
-                </div>
-              )}
-            </div>
-          </>
-        ) : (
-          <>
-            {isAuthUp ? t.authUp : t.authDown} {t.notifications}:{" "}
-            {soundStore.soundSettings.realmUp.enabled &&
-            soundStore.userInteracted
-              ? "ON 🔔"
-              : "OFF 🔕"}
-            <div>
-              {!soundStore.userInteracted && (
-                <div className="bg-yellow-600/60 text-white px-3 py-2 rounded mb-3 text-sm shadow animate-pulse">
-                  👆 To activate sound notifications, click on the page
-                </div>
-              )}
-            </div>
-          </>
-        )}
-      </div>
+      <div className="p-4 font-mono max-w-screen-lg mx-auto">
+        <SoundSettings />
 
-      <h1 className="text-1xl font-bold mb-4">{t.title}</h1>
-
-      <LanguageSwitcher language={language} setLanguage={setLanguage} />
-
-      {showTelegram && <TelegramBlock t={t} language={language} />}
-
-      <div className="my-2 flex gap-2 flex-wrap">
-        <button
-          onClick={() => setShowTelegram((prev) => !prev)}
-          className="text-sm bg-blue-700 hover:bg-blue-800 text-white px-3 py-1 rounded"
+        <div
+          className={`p-2 rounded mb-4 text-sm ${
+            isAuthUp
+              ? "bg-green-700 text-white"
+              : "bg-red-600 text-white animate-pulse"
+          }`}
         >
-          {showTelegram ? t.tgHide : t.tgShow}
-        </button>
+          {language === "ru" ? (
+            <>
+              {isAuthUp ? t.authUp : t.authDown} {t.notifications}:{" "}
+              {soundStore.soundSettings.realmUp.enabled &&
+              !soundStore.userInteracted
+                ? "ВКЛ 🔔"
+                : "ВЫКЛ 🔕"}
+              <div>
+                {!soundStore.userInteracted && (
+                  <div className="bg-yellow-600/60 text-white px-3 py-2 rounded mb-3 text-sm shadow animate-pulse">
+                    👆 Для активации звуковых уведомлений кликните по странице
+                  </div>
+                )}
+              </div>
+            </>
+          ) : (
+            <>
+              {isAuthUp ? t.authUp : t.authDown} {t.notifications}:{" "}
+              {soundStore.soundSettings.realmUp.enabled &&
+              soundStore.userInteracted
+                ? "ON 🔔"
+                : "OFF 🔕"}
+              <div>
+                {!soundStore.userInteracted && (
+                  <div className="bg-yellow-600/60 text-white px-3 py-2 rounded mb-3 text-sm shadow animate-pulse">
+                    👆 To activate sound notifications, click on the page
+                  </div>
+                )}
+              </div>
+            </>
+          )}
+        </div>
 
-        {showGame && (
-          <div className="fixed bottom-4 right-4 w-[340px] max-h-[90vh] z-50 bg-gray-700 rounded shadow-lg overflow-hidden border border-gray-700 overflow-y-auto">
-            <IdleGame
-              onStatsUpdate={setMiniGameStats}
-              language={language}
-              onClose={() => setShowGame(false)}
-            />
-          </div>
-        )}
+        <h1 className="text-1xl font-bold mb-4">{t.title}</h1>
 
-        <button
-          onClick={() => setShowGame((prev) => !prev)}
-          className="text-sm bg-purple-700 hover:bg-purple-800 text-white px-3 py-1 rounded"
-        >
-          {showGame
-            ? `${t.hideGame} — 🐉 ${miniGameStats.level} | 💰 ${miniGameStats.gold} | ⚔️ ${miniGameStats.dps}`
-            : `${t.game} — 🐉 ${miniGameStats.level} | 💰 ${miniGameStats.gold} | ⚔️ ${miniGameStats.dps}`}
-        </button>
-      </div>
+        <LanguageSwitcher language={language} setLanguage={setLanguage} />
 
-      <PatchVersion
-        version={patchInfo.version}
-        checked_at={patchInfo.checked_at}
-        changed_at={patchInfo.changed_at}
-        language={language}
-      />
+        {showTelegram && <TelegramBlock t={t} language={language} />}
 
-      {showPatchBanner && patchInfo.version && (
-        <PatchModal
+        <div className="my-2 flex gap-2 flex-wrap">
+          <button
+            onClick={() => setShowTelegram((prev) => !prev)}
+            className="text-sm bg-blue-700 hover:bg-blue-800 text-white px-3 py-1 rounded"
+          >
+            {showTelegram ? t.tgHide : t.tgShow}
+          </button>
+
+          {showGame && (
+            <div className="fixed bottom-4 right-4 w-[340px] max-h-[90vh] z-50 bg-gray-700 rounded shadow-lg overflow-hidden border border-gray-700 overflow-y-auto">
+              <IdleGame
+                onStatsUpdate={setMiniGameStats}
+                language={language}
+                onClose={() => setShowGame(false)}
+              />
+            </div>
+          )}
+
+          <button
+            onClick={() => setShowGame((prev) => !prev)}
+            className="text-sm bg-purple-700 hover:bg-purple-800 text-white px-3 py-1 rounded"
+          >
+            {showGame
+              ? `${t.hideGame} — 🐉 ${miniGameStats.level} | 💰 ${miniGameStats.gold} | ⚔️ ${miniGameStats.dps}`
+              : `${t.game} — 🐉 ${miniGameStats.level} | 💰 ${miniGameStats.gold} | ⚔️ ${miniGameStats.dps}`}
+          </button>
+        </div>
+
+        <PatchVersion
           version={patchInfo.version}
-          onClose={() => setShowPatchBanner(false)}
+          checked_at={patchInfo.checked_at}
+          changed_at={patchInfo.changed_at}
           language={language}
         />
-      )}
 
-      <RealmStatusList />
-      <RealmChat
-        realm="Gurubashi PVP"
-        username={username}
-        onUsernameSubmit={handleUsernameSubmit}
-        onChatMessage={() => {
-          console.log(
-            "Chat message received, sound enabled:",
-            soundStore.soundSettings.chat.enabled,
-            "settings:",
-            soundStore.soundSettings.chat
-          );
-          if (soundStore.soundSettings.chat.enabled) {
-            soundStore.play("chat");
-          } else {
-            console.log("Chat sound is disabled, not playing");
-          }
-        }}
-      />
+        {showPatchBanner && patchInfo.version && (
+          <PatchModal
+            version={patchInfo.version}
+            onClose={() => setShowPatchBanner(false)}
+            language={language}
+          />
+        )}
 
-      <StatusChart chartData={chartData} />
+        <RealmStatusList />
+        <RealmChat
+          realm="Gurubashi PVP"
+          username={username}
+          onUsernameSubmit={handleUsernameSubmit}
+          onChatMessage={() => {
+            console.log(
+              "Chat message received, sound enabled:",
+              soundStore.soundSettings.chat.enabled,
+              "settings:",
+              soundStore.soundSettings.chat
+            );
+            if (soundStore.soundSettings.chat.enabled) {
+              soundStore.play("chat");
+            } else {
+              console.log("Chat sound is disabled, not playing");
+            }
+          }}
+        />
 
-      <StatusList statuses={statuses} />
+        <StatusChart chartData={chartData} />
 
-      <DebugPanel />
+        <StatusList statuses={statuses} />
 
-      <Footer t={t} />
+        <DebugPanel />
 
-      <SpeedInsights />
+        <Footer t={t} />
 
-      <Analytics />
-    </div>
+        <SpeedInsights />
+
+        <Analytics />
+      </div>
+    </>
   );
 });
 
