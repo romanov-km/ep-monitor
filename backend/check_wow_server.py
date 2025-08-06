@@ -218,7 +218,7 @@ def update_new_users():
                         if version:
                             msg = (
                                 f"🆕 Current patch version: {version.decode()}\n"
-                                f"📅 Uploaded: {checked_at.decode() if checked_at else '-'}\n"
+                                f"📅 Checked at: {checked_at.decode() if checked_at else '-'}\n"
                                 f"🔄 Detected: {changed_at.decode() if changed_at else '-'}"
                             )
                             send_telegram_message(chat_id, msg)

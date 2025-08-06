@@ -36,6 +36,6 @@ translations = {
         "patch_current": "🆕 Current patch version: <b>{version}</b>\n⏱️ Updated: {checked_at}",
         "patch_updated": "🆕 New patch released!\nVersion: <b>{version}</b>\n⏱️ Updated: {checked_at}",
         "patch_unknown": "❔ Patch version is not available yet.",
-        "patch_btn": "Chech game patch"
+        "patch_btn": "Check game patch"
     }
 }

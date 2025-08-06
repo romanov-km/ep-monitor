@@ -70,7 +70,7 @@ const PatchVersion: React.FC<PatchVersionProps> = ({
         </Tooltip>
       </div>
       <div>
-        <b>📅 {t.patchUploaded || "Uploaded"}:</b> <span>{formatDateLocal(checked_at)}</span>
+        <b>📅 {t.patchUploaded || "Checked at"}:</b> <span>{formatDateLocal(checked_at)}</span>
       </div>
       <div>
         <b>🔄 {t.patchDetected || "Detected by monitor"}:</b> <span>{formatDateLocal(changed_at)}</span>
