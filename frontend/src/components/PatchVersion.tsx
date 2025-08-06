@@ -16,6 +16,21 @@ const PatchVersion: React.FC<PatchVersionProps> = ({
   language,
 }) => {
   const t = translations[language];
+  const formatDateLocal = (str: string | null) => {
+  if (!str) return "-";
+  // locale и timeZone не указываем — будет именно локально для пользователя!
+  return new Date(str).toLocaleString(undefined, {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false,
+    // timeZone: не указываем!
+  });
+};
+
 
   if (!version) {
     return (
@@ -55,11 +70,10 @@ const PatchVersion: React.FC<PatchVersionProps> = ({
         </Tooltip>
       </div>
       <div>
-        <b>📅 {t.patchUploaded || "Uploaded"}:</b> <span>{checked_at}</span>
+        <b>📅 {t.patchUploaded || "Uploaded"}:</b> <span>{formatDateLocal(checked_at)}</span>
       </div>
       <div>
-        <b>🔄 {t.patchDetected || "Detected by monitor"}:</b>{" "}
-        <span>{changed_at}</span>
+        <b>🔄 {t.patchDetected || "Detected by monitor"}:</b> <span>{formatDateLocal(changed_at)}</span>
       </div>
     </div>
   );
