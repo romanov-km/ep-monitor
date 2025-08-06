@@ -27,10 +27,43 @@ PORT = 3724
 CHECK_INTERVAL = 60
 LAST_UPDATE_ID = 0
 REALMS = ["Kezan", "Gurubashi"]
+PATCH_MANIFEST_URL = os.getenv("PATCH_MANIFEST_URL")
+PATCH_CHECK_INTERVAL = 60
+REDIS_PATCH_KEY = "latest_patch_version"
 
 # Telegram
 
 from locales import translations
+
+def get_patch_version():
+    try:
+        resp = requests.get(PATCH_MANIFEST_URL, timeout=10)
+        data = resp.json()
+        version = data.get("Version")
+        checked_at = data.get("checked_at")
+        return version, checked_at
+    except Exception as e:
+        print(f"⚠️ Ошибка при запросе манифеста патча: {e}")
+        return None, None
+    
+def monitor_patch_version():
+    while True:
+        version, checked_at = get_patch_version()
+        if version and checked_at:
+            prev_version = r.get("latest_patch_version")
+            if prev_version is None or prev_version.decode() != version:
+                now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                r.set("latest_patch_version", version)
+                r.set("latest_patch_checked_at", checked_at)
+                r.set("latest_patch_changed_at", now_str)
+                msg = f"🆕 Патч обновлён!\nВерсия: {version}\nВыложен: {checked_at}\nОбнаружен монитором: {now_str}"
+                print(msg)
+                #send_telegram_message_to_all(msg)
+                #send_discord_message(msg)
+            else:
+                # Просто обновляем дату последнего запроса к манифесту (на всякий)
+                r.set("latest_patch_checked_at", checked_at)
+        time.sleep(PATCH_CHECK_INTERVAL)
 
 def t(key, lang="ru", **kwargs):
     value = translations.get(lang, {}).get(key, key)
@@ -145,6 +178,7 @@ def update_new_users():
     try:
         resp = requests.get(url, timeout=5)
         data = resp.json()
+        
         if data.get("ok"):
             for result in data["result"]:
                 LAST_UPDATE_ID = result["update_id"]
@@ -165,6 +199,12 @@ def update_new_users():
                         send_telegram_message(chat_id, t("status_info", lang, interval=CHECK_INTERVAL))
                     elif text == "/realms":
                         send_telegram_message(chat_id, get_realms_status_text())
+                    elif text == "/patch":
+                        version = r.get("latest_patch_version")
+                        if version:
+                            send_telegram_message(chat_id, f"Current patch version:, {version.decode()}")
+                        else:
+                            send_telegram_message(chat_id, "The patch version has not yet been determined.")
 
                 if "callback_query" in result:
                     q = result["callback_query"]
@@ -260,6 +300,8 @@ if __name__ == "__main__":
 
     for realm in REALMS:
         threading.Thread(target=monitor_realm, args=(realm,), daemon=True).start()
+    
+    threading.Thread(target=monitor_patch_version, daemon=True).start()
 
     #threading.Thread(target=monitor_realms, daemon=True).start()
     threading.Thread(target=telegram_listener_loop, daemon=True).start()

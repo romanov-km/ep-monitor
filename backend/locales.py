@@ -12,6 +12,11 @@ translations = {
         "check_interval": "📊 Сервер проверяется каждые {interval} сек.",
         "lang_changed": "✅ Язык изменён на русский.",
         "realms_btn": "🌍 Реалмы",
+        "start": "👋 Привет! Я буду присылать тебе уведомления о состоянии серверов Project Epoch.",
+        # --- Patch-related ---
+        "patch_current": "🆕 Текущая версия патча: <b>{version}</b>\n⏱️ Обновлено: {checked_at}",
+        "patch_updated": "🆕 Вышел новый патч!\nВерсия: <b>{version}</b>\n⏱️ Обновлено: {checked_at}",
+        "patch_unknown": "❔ Версия патча пока не определена.",
     },
     "en": {
         "greeting": "👋 Hello! I’m watching the WoW server.",
@@ -26,5 +31,9 @@ translations = {
         "check_interval": "📊 The server is checked every {interval} sec.",
         "lang_changed": "✅ Language changed to English.",
         "realms_btn": "🌍 Realms",
+        # --- Patch-related ---
+        "patch_current": "🆕 Current patch version: <b>{version}</b>\n⏱️ Updated: {checked_at}",
+        "patch_updated": "🆕 New patch released!\nVersion: <b>{version}</b>\n⏱️ Updated: {checked_at}",
+        "patch_unknown": "❔ Patch version is not available yet.",
     }
 }

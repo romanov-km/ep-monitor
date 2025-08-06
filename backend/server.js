@@ -28,6 +28,23 @@ app.get("/api/health", async (req, res) => {
   }
 });
 
+app.get("/api/patch", async (req, res) => {
+  try {
+    const version = await redis.get("latest_patch_version");
+    const checked_at = await redis.get("latest_patch_checked_at");
+    const changed_at = await redis.get("latest_patch_changed_at");
+
+    res.json({
+      version: version || null,
+      checked_at: checked_at || null,
+      changed_at: changed_at || null
+    });
+  } catch (e) {
+    console.error("Ошибка получения версии патча:", e);
+    res.status(500).json({ error: "Failed to get patch version" });
+  }
+});
+
 app.use(cors());
 
 app.get("/api/status", async (req, res) => {
