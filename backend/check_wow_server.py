@@ -198,7 +198,6 @@ def update_new_users():
                     chat_id = msg["chat"]["id"]
                     text = msg.get("text", "")
                     lang = get_user_lang(chat_id)
-                    patch= 
                     if text == "/start":
                         save_user(chat_id)
                         lang = get_user_lang(chat_id)
