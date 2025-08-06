@@ -14,7 +14,7 @@ await redisClient.connect();
 
 const realmClients = new Map();
 const usernames = new Map();
-const busyNames = new Set();
+// const busyNames = new Set();
 // Grace period для освобождения ника
 const pendingNickRelease = new Map(); // name -> timeoutId
 const NICK_GRACE_PERIOD = 1000; // 1 секунд
@@ -44,7 +44,7 @@ let isShuttingDown = false;
 process.on('SIGTERM', gracefulShutdown);
 process.on('SIGINT', gracefulShutdown);
 
-const blockedIPs = ['154.20.93.24'];
+const blockedIPs = [''];
 
 // Функция для получения IP адреса из HTTP запроса
 function getClientIP(req) {
@@ -218,7 +218,7 @@ wss.on("connection", async (ws, req) => {
           return;
         }
 
-        // Проверяем защиту от частых переподключений
+        // //Проверяем защиту от частых переподключений
         // const now = Date.now();
         // const lastConnection = recentConnections.get(username);
         // if (lastConnection && (now - lastConnection) < CONNECTION_COOLDOWN) {
@@ -233,46 +233,12 @@ wss.on("connection", async (ws, req) => {
         // }
         // recentConnections.set(username, now);
 
-        // Если ник ожидает освобождения — отменяем таймер
-        console.log({username, busy: busyNames.has(username), isPending: pendingNickRelease.has(username)});
-        if (busyNames.has(username)) {
-          // Проверка — если этот ник занят, но ник ожидает освобождения именно с этого же IP, разреши пересесть на ник
-          console.log('Пытаюсь взять ник:', username, 'Мой IP:', ws.clientIP, 'pending:', pendingNickRelease.get(username)?.ip);
-          let isReclaim = false;
-          if (pendingNickRelease.has(username)) {
-            const info = pendingNickRelease.get(username);
-            if (info.sessionId === sessionId || info.ip === ws.clientIP) isReclaim = true;
-          }
-          if (isReclaim) {
-            clearTimeout(pendingNickRelease.get(username).timeoutId);
-            busyNames.delete(username);
-            pendingNickRelease.delete(username);
-          } else {
-            // Как было — отправляем ошибку
-            let waitMs = 0;
-            if (pendingNickRelease.has(username)) {
-              const timeoutObj = pendingNickRelease.get(username);
-              const timeLeft = Math.max(0, NICK_GRACE_PERIOD - (Date.now() - timeoutObj.start));
-              waitMs = timeLeft;
-            }
-            ws.send(JSON.stringify({
-              type: "error",
-              code: "duplicate_nick",
-              message: "This nickname is busy.",
-              wait: waitMs,
-            }));
-            ws.close();
-            return;
-          }
-        }
-
-
         ws.realm = realm;
         ws.username = username;
 
 
         // Регистрируем новый сокет
-        busyNames.add(username);
+        // busyNames.add(username);
         usernames.set(ws, username);
 
         // Добавляем клиента в список
@@ -334,18 +300,6 @@ wss.on("connection", async (ws, req) => {
     // Очищаем heartbeat
     clearHeartbeat(ws);
 
-    usernames.delete(ws);
-    if (name) {
-      // Вместо немедленного удаления ника — задержка
-      if (pendingNickRelease.has(name)) clearTimeout(pendingNickRelease.get(name).timeoutId);
-      const timeoutId = setTimeout(() => {
-        busyNames.delete(name);
-        pendingNickRelease.delete(name);
-        console.log(`⏳ Ник ${name} освобождён после grace period`);
-      }, NICK_GRACE_PERIOD);
-      pendingNickRelease.set(name, { timeoutId, start: Date.now(), ip: ws.clientIP, sessionId: ws.sessionId || null });
-    }
-
     if (realm && realmClients.has(realm)) {
       realmClients.get(realm).delete(ws);
       broadcastUserCount(realm);
@@ -372,7 +326,6 @@ wss.on("connection", async (ws, req) => {
     clearHeartbeat(ws);
 
     usernames.delete(ws);
-    if (name) busyNames.delete(name);
 
     if (realm && realmClients.has(realm)) {
       realmClients.get(realm).delete(ws);
@@ -417,37 +370,6 @@ function broadcastOnlineUsers(realm) {
   });
 }
 
-// Периодическая очистка мертвых соединений
-setInterval(() => {
-  if (isShuttingDown) return; // Не очищаем во время shutdown
-
-  // Очищаем старые записи о подключениях (старше 1 минуты)
-  const now = Date.now();
-  for (const [username, timestamp] of recentConnections.entries()) {
-    if (now - timestamp > 60000) {
-      recentConnections.delete(username);
-    }
-  }
-
-  // Очищаем старые записи о попытках подключения (старше 2 минут)
-  for (const [ip, attempts] of connectionAttempts.entries()) {
-    if (now - attempts.firstAttempt > 120000) {
-      connectionAttempts.delete(ip);
-    }
-  }
-
-  wss.clients.forEach((client) => {
-    if (client.readyState !== WebSocket.OPEN) {
-      const name = usernames.get(client);
-      if (name) {
-        clearHeartbeat(client);
-        busyNames.delete(name);
-        usernames.delete(client);
-        console.log(`🧹 Очищен зависший ник: ${name}`);
-      }
-    }
-  });
-}, 30000); // Проверяем каждые 30 секунд
 
 server.listen(PORT, () => {
   console.log(`✅ WebSocket сервер запущен на порту ${PORT}`);
