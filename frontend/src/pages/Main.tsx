@@ -100,7 +100,11 @@ const App = observer(function App() {
           if (lastVersion && lastVersion !== res.data.version) {
             setShowPatchBanner(true); // показать уведомление/баннер
             //if (soundStore?.play)
-            soundStore.play("authUp");
+            if (soundStore.soundSettings.patch.enabled) {
+              soundStore.play("patch");
+            } else {
+              console.log("Patch sound is disabled, not playing");
+            }
           }
           // Обновляем localStorage, чтобы не повторять
           localStorage.setItem("lastPatchVersion", res.data.version);

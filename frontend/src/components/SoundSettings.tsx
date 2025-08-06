@@ -3,7 +3,6 @@ import React, { useState } from "react";
 import { soundStore } from "../stores/soundStore";
 
 const SoundSettings: React.FC = observer(() => {
-
   const { soundSettings } = soundStore;
   const [open, setOpen] = useState(false);
 
@@ -23,6 +22,7 @@ const SoundSettings: React.FC = observer(() => {
     realmDown: "Down",
     authUp: "Auth",
     chat: "Chat",
+    patch: "Patch",
   };
 
   const eventIcons: Record<keyof typeof soundSettings, string> = {
@@ -30,117 +30,129 @@ const SoundSettings: React.FC = observer(() => {
     realmDown: "🔴",
     authUp: "🔐",
     chat: "💬",
+    patch: "💾",
   };
 
   return (
-    <div className="flex flex-wrap items-center justify-between bg-black text-white px-4 py-2 border-b border-gray-700">
+    <div className="flex flex-wrap items-center gap-1 justify-end bg-black text-white px-2 py-2 border-b border-gray-700">
       {/* Заголовок */}
-      <h2 className="text-lg font-semibold mr-2 truncate max-w-[150px] sm:max-w-none">
-        Project Epoch Realm Status
-      </h2>
+      <h2 className="text-lg font-semibold mr-2 truncate max-w-[150px] sm:max-w-none"></h2>
 
       {/* Кнопки-индикаторы без горизонтального скрола */}
       <div className="flex flex-wrap gap-1 max-w-full sm:max-w-none">
-        {(Object.keys(soundSettings) as (keyof typeof soundSettings)[]).map((key) => {
-          const event = soundSettings[key];
-          return (
-            <button
-              key={key}
-              onClick={() =>
-                soundStore.updateEvent(key, {
-                  enabled: !soundSettings[key].enabled,
-                })
-              }
-              className={`flex items-center text-xs px-2 py-1 rounded select-none transition-colors
-                ${event.enabled ? "bg-green-600 hover:bg-green-500" : "bg-gray-800 hover:bg-gray-700"}`}
-              title={eventLabels[key]}
-            >
-              {eventIcons[key]} {eventLabels[key]}
-            </button>
-          );
-        })}
+        {(Object.keys(soundSettings) as (keyof typeof soundSettings)[]).map(
+          (key) => {
+            const event = soundSettings[key];
+            return (
+              <button
+                key={key}
+                onClick={() =>
+                  soundStore.updateEvent(key, {
+                    enabled: !soundSettings[key].enabled,
+                  })
+                }
+                className={`flex items-center text-xs px-2 py-1 rounded select-none transition-colors
+                ${
+                  event.enabled
+                    ? "bg-green-600 hover:bg-green-500"
+                    : "bg-gray-800 hover:bg-gray-700"
+                }`}
+                title={eventLabels[key]}
+              >
+                {eventIcons[key]} {eventLabels[key]}
+              </button>
+            );
+          }
+        )}
       </div>
-
+      <button onClick={toggleSettings} className="text-xl focus:outline-none">
+        ⚙️
+      </button>
       {/* Кнопка настроек */}
       <div className="relative ml-2 sm:ml-4">
-        <button onClick={toggleSettings} className="text-xl focus:outline-none">
-          ⚙️
-        </button>
-
         {/* Панель настроек */}
         {open && (
           <div className="absolute right-0 mt-2 w-72 sm:w-80 max-w-[calc(100vw-1rem)] bg-gray-900 border border-gray-600 text-sm p-4 rounded shadow-lg z-50 overflow-y-auto max-h-[80vh]">
-            {(Object.keys(soundSettings) as (keyof typeof soundSettings)[]).map((key) => {
-              const event = soundSettings[key];
-              return (
-                <div key={key} className="mb-4 p-3 border border-gray-700 rounded">
-                  {/* Заголовок события с переключателем */}
-                  <button
-                    onClick={() =>
-                      soundStore.updateEvent(key, {
-                        enabled: !soundSettings[key].enabled,
-                      })
-                    }
-                    className={`w-full flex justify-between items-center px-2 py-1 rounded text-sm font-semibold transition-colors
-                      ${event.enabled ? "bg-green-600 hover:bg-green-500" : "bg-gray-800 hover:bg-gray-700"}`}
+            {(Object.keys(soundSettings) as (keyof typeof soundSettings)[]).map(
+              (key) => {
+                const event = soundSettings[key];
+                return (
+                  <div
+                    key={key}
+                    className="mb-4 p-3 border border-gray-700 rounded"
                   >
-                    <span>{eventLabels[key]}</span>
-                    <span>{event.enabled ? "ON" : "OFF"}</span>
-                  </button>
+                    {/* Заголовок события с переключателем */}
+                    <button
+                      onClick={() =>
+                        soundStore.updateEvent(key, {
+                          enabled: !soundSettings[key].enabled,
+                        })
+                      }
+                      className={`w-full flex justify-between items-center px-2 py-1 rounded text-sm font-semibold transition-colors
+                      ${
+                        event.enabled
+                          ? "bg-green-600 hover:bg-green-500"
+                          : "bg-gray-800 hover:bg-gray-700"
+                      }`}
+                    >
+                      <span>{eventLabels[key]}</span>
+                      <span>{event.enabled ? "ON" : "OFF"}</span>
+                    </button>
 
-                  {/* Детали, показываем только если включено */}
-                  {event.enabled && (
-                    <div className="mt-3 space-y-3">
-                      {/* Громкость */}
-                      <label className="block text-xs">
-                        Volume ({Math.round(event.volume * 100)}%)
-                        <input
-                          type="range"
-                          min={0}
-                          max={1}
-                          step={0.01}
-                          value={event.volume}
-                          onChange={(e) =>
-                            soundStore.updateEvent(key, {
-                              volume: Number(e.target.value),
-                            })
-                          }
-                          className="w-full"
-                        />
-                      </label>
+                    {/* Детали, показываем только если включено */}
+                    {event.enabled && (
+                      <div className="mt-3 space-y-3">
+                        {/* Громкость */}
+                        <label className="block text-xs">
+                          Volume ({Math.round(event.volume * 100)}%)
+                          <input
+                            type="range"
+                            min={0}
+                            max={1}
+                            step={0.01}
+                            value={event.volume}
+                            onChange={(e) =>
+                              soundStore.updateEvent(key, {
+                                volume: Number(e.target.value),
+                              })
+                            }
+                            className="w-full"
+                          />
+                        </label>
 
-                      {/* Тип звука */}
-                      <label className="block text-xs">
-                        Sound Type
-                        <select
-                          value={event.soundType}
-                          onChange={(e) =>
-                            soundStore.updateEvent(key, {
-                              soundType: e.target.value,
-                            })
-                          }
-                          className="w-full bg-gray-800 text-white border border-gray-600 px-2 py-1 mt-1 text-xs"
+                        {/* Тип звука */}
+                        <label className="block text-xs">
+                          Sound Type
+                          <select
+                            value={event.soundType}
+                            onChange={(e) =>
+                              soundStore.updateEvent(key, {
+                                soundType: e.target.value,
+                              })
+                            }
+                            className="w-full bg-gray-800 text-white border border-gray-600 px-2 py-1 mt-1 text-xs"
+                          >
+                            {soundOptions.map((option) => (
+                              <option key={option.value} value={option.value}>
+                                {option.label}
+                              </option>
+                            ))}
+                          </select>
+                        </label>
+
+                        {/* Тест */}
+                        <button
+                          onClick={() => soundStore.playTestSound(key)}
+                          className="text-blue-400 text-xs hover:text-blue-300"
                         >
-                          {soundOptions.map((option) => (
-                            <option key={option.value} value={option.value}>
-                              {option.label}
-                            </option>
-                          ))}
-                        </select>
-                      </label>
-
-                      {/* Тест */}
-                      <button
-                        onClick={() => soundStore.playTestSound(key)}
-                        className="text-blue-400 text-xs hover:text-blue-300"
-                      >
-                        🔊 Test Sound
-                      </button>
-                    </div>
-                  )}
-                </div>
-              );
-            })}
+                          🔊 Test Sound
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                );
+              }
+            )}
 
             {/* Глобальная остановка */}
             <div className="border-t border-gray-700 pt-2">

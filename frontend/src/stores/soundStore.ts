@@ -11,6 +11,7 @@ export interface AppSoundSettings {
   authUp: SoundEvent;
   chat: SoundEvent;
   realmDown: SoundEvent;
+  patch: SoundEvent;
 }
 
 const defaultSettings: AppSoundSettings = {
@@ -18,6 +19,7 @@ const defaultSettings: AppSoundSettings = {
   authUp: { enabled: true, soundType: "levelup", volume: 1 },
   chat: { enabled: true, soundType: "newmsg", volume: 0.6 },
   realmDown: { enabled: true, soundType: "down", volume: 1 },
+  patch: { enabled: true, soundType: "levelup", volume: 1 }
 };
 
 class SoundStore {
