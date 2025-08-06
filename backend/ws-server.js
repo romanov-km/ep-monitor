@@ -44,6 +44,8 @@ let isShuttingDown = false;
 process.on('SIGTERM', gracefulShutdown);
 process.on('SIGINT', gracefulShutdown);
 
+const blockedIPs = ['154.20.93.24'];
+
 // Функция для получения IP адреса из HTTP запроса
 function getClientIP(req) {
   // 1. Берём X-Forwarded-For, если есть (Railway пишет клиента последним)
@@ -131,6 +133,12 @@ function clearHeartbeat(ws) {
 wss.on("connection", async (ws, req) => {
   const clientIP = getClientIP(req);
   console.log(`🔌 Новое подключение с IP: ${clientIP}`);
+
+  if (blockedIPs.includes(clientIP)) {
+    ws.close(4001, "IP заблокирован сервером");
+    console.log(`❌ Блокировано подключение с IP: ${ip}`);
+    return;
+  }
 
   // Сохраняем IP в объекте соединения для дальнейшего использования
   ws.clientIP = clientIP;
