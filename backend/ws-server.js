@@ -375,7 +375,7 @@ wss.on("connection", async (ws, req) => {
     }
   });
 
-  ws.on("close", () => {
+  ws.on("close", (code, reason) => {
     removeClient(ws)
     console.log(
     `[CLOSE] ${ws.username || "unknown"} (${ws.clientIP || "-"}) — code: ${code}, reason: ${reason}`
