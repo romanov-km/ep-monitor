@@ -58,12 +58,23 @@ def monitor_patch_version():
                 r.set("latest_patch_changed_at", now_str)
                 msg = f"🆕 Патч обновлён!\nВерсия: {version}\nВыложен: {checked_at}\nОбнаружен монитором: {now_str}"
                 print(msg)
-                #send_telegram_message_to_all(msg)
-                #send_discord_message(msg)
+                send_telegram_message_to_all(msg)
+                send_discord_message(msg)
             else:
                 # Просто обновляем дату последнего запроса к манифесту (на всякий)
                 r.set("latest_patch_checked_at", checked_at)
         time.sleep(PATCH_CHECK_INTERVAL)
+
+def delete_telegram_message(chat_id, message_id):
+    url = f"https://api.telegram.org/bot{BOT_TOKEN}/deleteMessage"
+    payload = {
+        "chat_id": chat_id,
+        "message_id": message_id
+    }
+    try:
+        requests.post(url, json=payload, timeout=5)
+    except Exception as e:
+        print(f"‼️ Telegram delete error: {e}")        
 
 def t(key, lang="ru", **kwargs):
     value = translations.get(lang, {}).get(key, key)
@@ -187,6 +198,7 @@ def update_new_users():
                     chat_id = msg["chat"]["id"]
                     text = msg.get("text", "")
                     lang = get_user_lang(chat_id)
+                    patch= 
                     if text == "/start":
                         save_user(chat_id)
                         lang = get_user_lang(chat_id)
@@ -201,28 +213,57 @@ def update_new_users():
                         send_telegram_message(chat_id, get_realms_status_text())
                     elif text == "/patch":
                         version = r.get("latest_patch_version")
+                        checked_at = r.get("latest_patch_checked_at")
+                        changed_at = r.get("latest_patch_changed_at")
                         if version:
-                            send_telegram_message(chat_id, f"Current patch version:, {version.decode()}")
+                            msg = (
+                                f"🆕 Current patch version: {version.decode()}\n"
+                                f"📅 Uploaded: {checked_at.decode() if checked_at else '-'}\n"
+                                f"🔄 Detected: {changed_at.decode() if changed_at else '-'}"
+                            )
+                            send_telegram_message(chat_id, msg)
                         else:
                             send_telegram_message(chat_id, "The patch version has not yet been determined.")
+
 
                 if "callback_query" in result:
                     q = result["callback_query"]
                     chat_id = q["from"]["id"]
                     data = q["data"]
                     lang = get_user_lang(chat_id)
+                    message_id = q["message"]["message_id"]
                     if data == "check":
                         send_telegram_message(chat_id, check_server_status_text())
+                        delete_telegram_message(chat_id, message_id)
                     elif data == "status":
                         send_telegram_message(chat_id, t("status_info", lang, interval=CHECK_INTERVAL))
+                        delete_telegram_message(chat_id, message_id)
                     elif data == "unsubscribe":
                         remove_user(chat_id)
                         send_telegram_message(chat_id, t("unsubscribed", lang))
+                        delete_telegram_message(chat_id, message_id)
                     elif data.startswith("lang_"):
                         set_user_lang(chat_id, data.split("_")[1])
                         send_telegram_message(chat_id, t("language_set", get_user_lang(chat_id)))
                     elif data == "realms":
                         send_telegram_message(chat_id, get_realms_status_text())
+                        delete_telegram_message(chat_id, message_id)
+                    elif data == "patch":
+                        version = r.get("latest_patch_version")
+                        checked_at = r.get("latest_patch_checked_at")
+                        changed_at = r.get("latest_patch_changed_at")
+                        if version:
+                            msg = (
+                                f"🆕 Current patch version: {version.decode()}\n"
+                                f"📅 Uploaded: {checked_at.decode() if checked_at else '-'}\n"
+                                f"🔄 Detected: {changed_at.decode() if changed_at else '-'}"
+                            )
+                            send_telegram_message(chat_id, msg)
+                            delete_telegram_message(chat_id, message_id)
+                        else:
+                            send_telegram_message(chat_id, "The patch version has not yet been determined.")
+                            delete_telegram_message(chat_id, message_id)
+
                     requests.post(f"https://api.telegram.org/bot{BOT_TOKEN}/answerCallbackQuery",
                                   json={"callback_query_id": q["id"]})
     except Exception as e:
