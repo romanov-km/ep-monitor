@@ -109,7 +109,7 @@ const App = observer(function App() {
     };
 
     fetchPatch();
-    const interval = setInterval(fetchPatch, 1000);
+    const interval = setInterval(fetchPatch, 60000);
     return () => clearInterval(interval);
   }, []);
 
