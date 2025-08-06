@@ -50,7 +50,7 @@ export const translations = {
       },
       patchUnknown: "Нет данных о патче",
       patchCurrent: "Текущий патч",
-      patchUploaded: "Патч загружен",
+      patchUploaded: "Патч проверен",
       patchDetected: "Патч опредлен"
     },
     en: {
@@ -104,7 +104,7 @@ export const translations = {
       },
       patchUnknown: "No patch data",
       patchCurrent: "Current patch",
-      patchUploaded: "Patch uploaded",
+      patchUploaded: "Patch checked at",
       patchDetected: "Patch detected"
     },
   };
