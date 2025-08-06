@@ -136,7 +136,7 @@ wss.on("connection", async (ws, req) => {
 
   if (blockedIPs.includes(clientIP)) {
     ws.close(4001, "IP заблокирован сервером");
-    console.log(`❌ Блокировано подключение с IP: ${ip}`);
+    console.log(`❌ Блокировано подключение с IP: ${clientIP}`);
     return;
   }
 
