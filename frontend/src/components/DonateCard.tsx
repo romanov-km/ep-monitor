@@ -13,7 +13,16 @@ export interface Donation {
   is_shown: number;
   created_at: string;
   shown_at: string | null;
+  amount_in_user_currency: number;
 }
+
+const currencySymbols: Record<string, string> = {
+  RUB: "₽",
+  USD: "$",
+  EUR: "€",
+  GBP: "£",
+  UAH: "₴",
+};
 
 export const DonatCard: React.FC = () => {
   const [donations, setDonations] = useState<Donation[]>([]);
@@ -33,7 +42,7 @@ export const DonatCard: React.FC = () => {
       });
   }, []);
 
-   const percent = Math.min(100, Math.round((current / goal) * 100));
+  const percent = Math.min(100, Math.round((current / goal) * 100));
 
   return (
     <div className="w-1/5 max-w-xs flex flex-col gap-1 backdrop-blur-lg shadow-2xl rounded-2xl px-2 py-2 transition-all duration-200 hover:shadow-emerald-400/30 hover:shadow-2xl hover:border-emerald-300 bg-black/55">
@@ -51,7 +60,6 @@ export const DonatCard: React.FC = () => {
       </a>
       <div className="">
         <div className="flex justify-between text-xs text-gray-400 mb-1">
-          
           {/* <span>target:{goal}%</span> */}
         </div>
         <div className="w-full bg-gray-700 rounded-full h-3 overflow-hidden">
@@ -63,20 +71,25 @@ export const DonatCard: React.FC = () => {
       </div>
       <div className="">
         <div className="text-xs text-gray-400 mb-1">top donators:</div>
-            <ul className="space-y-1">
-                {donations.length === 0 && (
-                    <li className="text-gray-500 text-xs">no donats 😔</li>
-                )}
-                {donations.slice(0, 5).map((d, i) => (
-                    <li key={i} className="flex justify-between text-sm">
-                    <span className="text-green-300 font-semibold">
-                        {d.username || d.name}
-                    </span>
-                    <span className="text-gray-200">{d.amount}₽</span>
-                    </li>
-                ))}
-            </ul>
-        </div>
+        <ul className="space-y-1">
+          {donations.length === 0 && (
+            <li className="text-gray-500 text-xs">no donats 😔</li>
+          )}
+          {donations
+            .filter((d) => d.is_shown === 1)
+            .slice(0, 5)
+            .map((d) => (
+              <li key={d.id} className="flex justify-between text-sm">
+                <span className="text-green-300 font-semibold">
+                  {d.username || d.name}
+                </span>
+                <span className="text-gray-200">
+                  {d.amount} {currencySymbols[d.currency] || d.currency}
+                </span>
+              </li>
+            ))}
+        </ul>
+      </div>
     </div>
   );
 };
