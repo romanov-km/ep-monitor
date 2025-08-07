@@ -18,7 +18,7 @@
 a {
   font-weight: 500;
   /* color: #646cff; */
-  text-decoration: inherit;
+  /* text-decoration: inherit; */
 }
 a:hover {
   /* color: #535bf2; */
@@ -32,13 +32,14 @@ body {
   min-height: 100vh;
   justify-content: center;
   background-color: #242424;
-  background-image: url('/trol.png');
+  /* background-image: url('/trol.png'); */
+  background: var(--site-bg, url('/trol.png') no-repeat center center fixed);
   background-size: cover;
   background-position: center;
-  background-attachment: fixed; /* По желанию, чтобы фон был статичен */
+  background-attachment: fixed;
   margin: 0;
   padding: 0;
-  overflow-x: hidden; /* Убрать горизонтальный скролл */
+  overflow-x: hidden;
 }
 
 button {
@@ -57,7 +58,7 @@ button:hover {
 }
 button:focus,
 button:focus-visible {
-  outline: 4px auto -webkit-focus-ring-color;
+  /* outline: 4px auto -webkit-focus-ring-color; */
 }
 
 @media (prefers-color-scheme: dark) {

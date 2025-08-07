@@ -21,6 +21,7 @@ import { observer } from "mobx-react-lite";
 import PatchVersion from "../components/PatchVersion";
 import PatchModal from "../components/PatchModal";
 import { Helmet } from "react-helmet";
+import { BackgroundPicker } from "../components/BackgroundPicker";
 
 interface StatusEntry {
   time: string;
@@ -232,16 +233,11 @@ const App = observer(function App() {
           <meta property="og:url" content="https://project-epoch.ru/" />
         </Helmet>
 
-        <header
-          className="bg-black/45 flex justify-between items-center
-    px-2 py-2
-    bg-black/50 backdrop-blur-md
-    rounded-b-2xl border-b border-cyan-800/30
-    shadow
-    max-w-screen-lg mx-auto
-    mb-4"
-        >
-          <LanguageSwitcher language={language} setLanguage={setLanguage} />
+        <header className="bg-black/50 flex flex-wrap sm:flex-nowrap justify-between items-center rounded-b-2xl border-b border-cyan-800/30 shadow px-2 py-2 max-w-screen-lg mx-auto mb-4">
+          <div className="flex items-center gap-3 mb-2 sm:mb-0">
+            <LanguageSwitcher language={language} setLanguage={setLanguage} />
+            <BackgroundPicker />
+          </div>
           <SoundSettings />
         </header>
         <main>
@@ -286,7 +282,7 @@ const App = observer(function App() {
           </div>
 
           <h1 className="text-1xl font-bold mb-4">{t.title}</h1>
-          
+
           {showTelegram && <TelegramBlock t={t} language={language} />}
 
           <div className="my-2 flex gap-2 flex-wrap z-50">
