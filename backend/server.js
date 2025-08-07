@@ -2,11 +2,14 @@ import express from "express";
 import cors from "cors";
 import { createClient } from "redis";
 import dotenv from "dotenv";
+import fetch from 'node-fetch';
 
 dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 3001;
+const DA_API_URL = "https://www.donationalerts.com/api/v1/alerts/donations";
+const ACCESS_TOKEN = process.env.DA_ACCESS_TOKEN;
 
 if (!process.env.REDIS_URL) {
   console.error("❌ REDIS_URL не задан в переменных среды!");
@@ -27,6 +30,19 @@ app.get("/api/health", async (req, res) => {
     res.status(200).send("🟢 OK");
   } catch (e) {
     res.status(500).send("🔴 Redis недоступен");
+  }
+});
+
+app.get('/api/donations', async (req, res) => {
+  try {
+    const resp = await fetch(DA_API_URL, {
+      headers: { Authorization: `Bearer ${ACCESS_TOKEN}` }
+    });
+    const data = await resp.json();
+    // Можно отдать data.data или map по своему
+    res.json(data.data.slice(0, 10)); // последние 10 донатов
+  } catch (e) {
+    res.status(500).json({ error: "DA API error", details: e.message });
   }
 });
 
