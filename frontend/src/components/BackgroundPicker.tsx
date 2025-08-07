@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 
 const options = [
+  { name: "Alliance2", value: "url('/boobs.png')", img: "/boobs.png" },
   { name: "WoW Jungle", value: "url('/bg.png')", img: "/bg.png" },
   { name: "Queue", value: "url('/trol.png')", img: "/trol.png" },
   { name: "Boobs", value: "url('/raw.png')", img: "/raw.png" },
