@@ -14,7 +14,7 @@ const options = [
 
 export const BackgroundPicker = () => {
   const [currentBg, setCurrentBg] = useState<string>(
-    localStorage.getItem("siteBg") || options[0].value
+    localStorage.getItem("siteBg") || options[1].value
   );
 
   useEffect(() => {
