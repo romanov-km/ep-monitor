@@ -75,18 +75,16 @@ export const DonatCard: React.FC = () => {
           {donations.length === 0 && (
             <li className="text-gray-500 text-xs">no donats 😔</li>
           )}
-          {donations
-            .slice(0, 5)
-            .map((d) => (
-              <li key={d.id} className="flex justify-between text-sm">
-                <span className="text-green-300 font-semibold">
-                  {d.username || d.name}
-                </span>
-                <span className="text-gray-200">
-                  {d.amount} {currencySymbols[d.currency] || d.currency}
-                </span>
-              </li>
-            ))}
+          {donations.slice(0, 5).map((d) => (
+            <li key={d.id} className="flex justify-between text-sm">
+              <span className="text-green-300 font-semibold">
+                {d.username || d.name}
+              </span>
+              <span className="text-gray-200">
+                {d.amount} {currencySymbols[d.currency] || d.currency}
+              </span>
+            </li>
+          ))}
         </ul>
       </div>
     </div>
