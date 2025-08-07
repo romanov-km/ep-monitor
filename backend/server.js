@@ -39,7 +39,7 @@ app.get('/api/donations', async (req, res) => {
       headers: { Authorization: `Bearer ${ACCESS_TOKEN}` }
     });
     const data = await resp.json();
-    // Можно отдать data.data или map по своему
+    console.log("DA API ответ:", data); 
     res.json(data.data.slice(0, 10)); // последние 10 донатов
   } catch (e) {
     res.status(500).json({ error: "DA API error", details: e.message });
