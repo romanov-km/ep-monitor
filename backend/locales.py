@@ -17,7 +17,8 @@ translations = {
         "patch_current": "🆕 Текущая версия патча: <b>{version}</b>\n⏱️ Обновлено: {checked_at}",
         "patch_updated": "🆕 Вышел новый патч!\nВерсия: <b>{version}</b>\n⏱️ Обновлено: {checked_at}",
         "patch_unknown": "❔ Версия патча пока не определена.",
-        "patch_btn": "Проверка патча игры"
+        "patch_btn": "Проверка патча игры",
+        "donate": "Поддержать"
     },
     "en": {
         "greeting": "👋 Hello! I’m watching the WoW server.",
@@ -36,6 +37,7 @@ translations = {
         "patch_current": "🆕 Current patch version: <b>{version}</b>\n⏱️ Updated: {checked_at}",
         "patch_updated": "🆕 New patch released!\nVersion: <b>{version}</b>\n⏱️ Updated: {checked_at}",
         "patch_unknown": "❔ Patch version is not available yet.",
-        "patch_btn": "Check game patch"
+        "patch_btn": "Check game patch",
+        "donate": "Support via donation"
     }
 }

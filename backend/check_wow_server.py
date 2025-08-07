@@ -160,6 +160,7 @@ def send_telegram_message(chat_id, message):
             [{"text": t("unsubscribe_btn", lang), "callback_data": "unsubscribe"}],
             [{"text": t("realms_btn", lang), "callback_data": "realms"}],
             [{"text": t("patch_btn", lang, default='Patch'), "callback_data": "patch"}],
+            [{"text": t("donate", lang), "url": "https://www.donationalerts.com/r/yakuji_"}],
             [
                 {"text": "🇷🇺 Русский", "callback_data": "lang_ru"},
                 {"text": "🇺🇸 English", "callback_data": "lang_en"}
