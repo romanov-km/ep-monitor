@@ -6,6 +6,7 @@ import {
   YAxis,
   Tooltip,
   ResponsiveContainer,
+  ReferenceLine,
 } from "recharts";
 
 interface ChartPoint {
@@ -17,13 +18,18 @@ interface RealmChartProps {
   realmData: Record<string, ChartPoint[]>;
 }
 
+// Custom Tooltip with WoW vibe
 const CustomTooltip = ({ active, payload, label }: any) => {
   if (active && payload && payload.length) {
-    const status = payload[0].value === 1 ? "🟢 UP" : "🔴 DOWN";
+    const status = payload[0].value === 1 ? (
+      <span className="font-bold text-emerald-500">🟢 UP</span>
+    ) : (
+      <span className="font-bold text-red-400">🔴 DOWN</span>
+    );
     return (
-      <div className="bg-white p-2 text-sm text-black rounded shadow">
-        <p>⏰ {label}</p>
-        <p>{status}</p>
+      <div className="bg-gray-900/95 border border-cyan-700/30 rounded-lg shadow-xl px-3 py-2 text-xs text-emerald-100">
+        <div className="mb-1">⏰ <span className="font-mono">{label}</span></div>
+        <div>{status}</div>
       </div>
     );
   }
@@ -32,46 +38,65 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 
 const RealmCharts: React.FC<RealmChartProps> = ({ realmData }) => {
   return (
-    <div className="flex flex-col md:flex-row md:flex-wrap md:justify-between space-y-6 md:space-y-0 md:space-x-4 p-4">
+    <div className="flex flex-col md:flex-row md:flex-wrap md:justify-between gap-6 p-4">
       {Object.entries(realmData).map(([realmName, data]) => (
         <div
           key={realmName}
-          className="w-full md:w-[48%] border border-gray-700 rounded p-2 bg-gray-900"
+          className="
+            w-full md:w-[48%]
+            bg-black/70 backdrop-blur-md rounded-2xl shadow-lg border border-cyan-700/30
+            px-4 py-3
+            flex flex-col items-stretch
+          "
         >
-          <h2 className="text-sm font-bold mb-1 text-center text-gray-300">
+          <h2 className="text-base font-bold mb-2 text-center text-cyan-300 drop-shadow">
             🧭 {realmName}
           </h2>
           {data.length === 0 ? (
-            <p className="text-gray-500 text-center">Нет данных</p>
+            <p className="text-gray-400 text-center">Нет данных</p>
           ) : (
-            <div className="h-20">
+            <div className="h-32">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={data}>
                   <XAxis
                     dataKey="time"
-                    tick={{ fontSize: 10 }}
+                    tick={{ fontSize: 10, fill: "#ccc" }}
                     interval="preserveStartEnd"
-                    minTickGap={50}
+                    minTickGap={40}
                     tickFormatter={(str) => {
                       const [date, time] = str.split(" ");
                       return `${time}\n${date}`;
                     }}
+                    axisLine={{ stroke: "#256d5a" }}
+                    tickLine={false}
                   />
                   <YAxis
                     domain={[0, 1]}
                     ticks={[0, 1]}
-                    tickFormatter={(v) => (v === 1 ? "UP" : "DOWN")}
+                    tick={{ fontSize: 12, fill: "#ccc", fontWeight: 700 }}
+                    tickFormatter={(v) =>
+                      v === 1
+                        ? "UP"
+                        : v === 0
+                        ? "DOWN"
+                        : v.toString()
+                    }
                     width={40}
+                    axisLine={{ stroke: "#256d5a" }}
+                    tickLine={false}
                   />
+                  <ReferenceLine y={1} stroke="#14ff92" strokeDasharray="3 3" />
+                  <ReferenceLine y={0} stroke="#fb7185" strokeDasharray="3 3" />
                   <Tooltip content={<CustomTooltip />} />
                   <Line
                     type="monotone"
                     dataKey="statusValue"
-                    stroke="#00cc66"
+                    stroke="#14ff92"
+                    strokeWidth={3}
                     dot={false}
-                    strokeWidth={2}
                     isAnimationActive={true}
-                    animationDuration={800}
+                    animationDuration={600}
+                    className="drop-shadow"
                   />
                 </LineChart>
               </ResponsiveContainer>
@@ -82,6 +107,5 @@ const RealmCharts: React.FC<RealmChartProps> = ({ realmData }) => {
     </div>
   );
 };
-
 
 export default RealmCharts;

@@ -31,15 +31,6 @@ const LoginPage: React.FC = () => {
     />
   </div>
 
-  {/* Передние облака */}
-  <div className="absolute top-0 left-0 w-full h-full z-10 animate-clouds-front">
-    <img
-      src="/clouds-front.png"
-      className="w-[200%] h-full object-cover opacity-50"
-      alt="clouds front"
-    />
-  </div>
-
       <div className="relative z-10 flex flex-col min-h-screen">
         {/* Header */}
         <header className="absolute top-0 left-0 p-8">

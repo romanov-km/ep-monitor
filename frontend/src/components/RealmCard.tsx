@@ -14,41 +14,49 @@ export const RealmCard: React.FC<RealmCardProps> = observer(
     const isValidDate = !isNaN(date.getTime());
     const isDown = status === "DOWN";
 
-    // Стилизация карточки
+    // Цвета и glow для hover
     const cardColor = [
       "border",
-      "backdrop-blur-md",
-      "shadow-xl",
+      "backdrop-blur-lg",
+      "shadow-2xl",
       "rounded-2xl",
-      "px-4",
-      "py-3",
-      "transition-colors",
+      "px-5",
+      "py-4",
+      "transition-all",
       "duration-200",
-      "hover:bg-black/70",
-      "bg-black/60",
+      "hover:shadow-emerald-400/30",
+      "hover:shadow-2xl",
+      "hover:border-emerald-300",
+      "bg-black/55",
       isDown
-        ? "border-red-500/70"
+        ? "border-red-500/70 hover:border-red-400"
         : "border-green-500/60"
     ].join(" ");
 
-    const statusColor = isDown ? "text-red-400" : "text-green-400";
+    const statusColor = isDown
+      ? "text-red-400 drop-shadow-md"
+      : "text-emerald-400 drop-shadow-md";
 
     return (
       <div className={cardColor}>
         {/* Верхняя строка: иконка + статус */}
         <div className="flex items-center justify-between mb-2">
-          <span className="text-2xl leading-none">{icon}</span>
-          <span className={`text-xs font-bold tracking-wide ${statusColor}`}>{status}</span>
+          <span className="text-2xl drop-shadow">{icon}</span>
+          <span
+            className={`text-xs font-extrabold uppercase tracking-widest ${statusColor}`}
+          >
+            {status}
+          </span>
         </div>
         {/* Название реалма */}
-        <div className="font-semibold text-base truncate mb-1 text-gray-100 drop-shadow">
+        <div className="font-extrabold text-lg truncate mb-1 text-gray-100 drop-shadow-lg tracking-wide">
           {name}
         </div>
         {/* Время последней проверки */}
         {isValidDate && (
-          <div className="flex justify-between text-xs text-gray-400">
-            Last check:
-            <time>
+          <div className="flex items-center gap-2 text-xs text-gray-400 mt-1">
+            <span className="text-gray-500">⏱️</span>
+            <span className="font-mono">
               {date.toLocaleString(undefined, {
                 day: "2-digit",
                 month: "2-digit",
@@ -57,13 +65,12 @@ export const RealmCard: React.FC<RealmCardProps> = observer(
                 second: "2-digit",
                 hour12: false,
               })}
-            </time>
+            </span>
           </div>
         )}
       </div>
     );
   }
 );
-
 
 export default RealmCard;

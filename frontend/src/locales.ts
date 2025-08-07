@@ -49,9 +49,9 @@ export const translations = {
         petStones: "Камни пета",
       },
       patchUnknown: "Нет данных о патче",
-      patchCurrent: "Текущий патч",
-      patchUploaded: "Патч проверен",
-      patchDetected: "Патч опредлен"
+      patchCurrent: "патч",
+      patchUploaded: "проверен",
+      patchDetected: "опредлен"
     },
     en: {
       title: "Project Epoch Status - real-time status of authentication and game servers",
@@ -103,9 +103,9 @@ export const translations = {
         petStones: "Pet Stones",
       },
       patchUnknown: "No patch data",
-      patchCurrent: "Current patch",
-      patchUploaded: "Patch checked at",
-      patchDetected: "Patch detected"
+      patchCurrent: "patch",
+      patchUploaded: "checked at",
+      patchDetected: "detected"
     },
   };
   

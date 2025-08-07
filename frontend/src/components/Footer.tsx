@@ -9,40 +9,49 @@ interface FooterProps {
 
 const Footer: React.FC<FooterProps> = ({ t }) => {
   return (
-    <footer className="mt-10 pt-6 border-t border-gray-700 text-sm text-gray-300 text-center space-y-2">
-      <p>💼 Looking for a frontend & backend dev? Contact me:</p>
+    <footer className="
+      mt-10 pt-6 pb-4 px-2
+      bg-black/40 backdrop-blur border-t border-gray-700/60
+      rounded-t-2xl shadow-inner
+      text-sm text-gray-200 text-center space-y-2
+      max-w-screen-md mx-auto
+    ">
+      <p className="font-semibold text-emerald-400 drop-shadow-sm">
+        💼 Looking for a frontend & backend dev? Contact me:
+      </p>
 
       <div className="flex flex-col md:flex-row justify-center items-center gap-2 text-sm">
         <p>
-          Telegram:{" "}
+          <span className="mr-1 text-emerald-300">Telegram:</span>
           <a
             href="https://t.me/kmromanov"
             target="_blank"
             rel="noopener noreferrer"
-            className="text-green-400 underline"
+            className="text-emerald-300 hover:text-emerald-400 underline underline-offset-2 transition"
           >
             @kmromanov
           </a>
         </p>
         <p>
-          Discord: <span className="text-green-300">yakuji</span>
+          <span className="mr-1 text-sky-300">Discord:</span>
+          <span className="text-emerald-200 font-mono">yakuji</span>
         </p>
         <p>
-          Email:{" "}
+          <span className="mr-1 text-yellow-300">Email:</span>
           <a
             href="mailto:kirill.dev.job@gmail.com"
-            className="text-green-400 underline"
+            className="text-yellow-200 hover:text-yellow-300 underline underline-offset-2 transition"
           >
             kirill.dev.job@gmail.com
           </a>
         </p>
         <p>
-          GitHub:{" "}
+          <span className="mr-1 text-gray-400">GitHub:</span>
           <a
             href="https://github.com/romanov-km"
             target="_blank"
             rel="noopener noreferrer"
-            className="text-green-400 underline"
+            className="text-gray-300 hover:text-white underline underline-offset-2 transition"
           >
             @romanov-km
           </a>
@@ -50,20 +59,20 @@ const Footer: React.FC<FooterProps> = ({ t }) => {
       </div>
 
       <p className="text-xs text-gray-400">
-        {t.support}
+        {t.support}{" "}
         <a
           href="https://www.donationalerts.com/r/yakuji_"
           target="_blank"
           rel="noopener noreferrer"
-          className="text-blue-400 underline hover:text-blue-300"
+          className="text-blue-400 hover:text-blue-300 underline underline-offset-2 transition"
         >
           {t.donateLink}
         </a>{" "}
-        ☕
+        <span className="inline-block animate-bounce">☕</span>
       </p>
 
-      <p className="text-xs text-gray-500 mt-1">
-        Built by a frontend dev searching for epic quests (a.k.a. a job) 🧙‍♂️
+      <p className="text-xs text-gray-600 mt-2">
+        Built by a frontend dev searching for epic quests <span className="inline-block animate-pulse">🧙‍♂️</span>
       </p>
     </footer>
   );
