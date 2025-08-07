@@ -22,6 +22,7 @@ import PatchVersion from "../components/PatchVersion";
 import PatchModal from "../components/PatchModal";
 import { Helmet } from "react-helmet";
 import { BackgroundPicker } from "../components/BackgroundPicker";
+import DonatCard from "../components/DonateCard";
 
 interface StatusEntry {
   time: string;
@@ -320,6 +321,7 @@ const App = observer(function App() {
               language={language}
             />
             <RealmStatusList />
+            <DonatCard />
           </div>
 
           {showPatchBanner && patchInfo.version && (
