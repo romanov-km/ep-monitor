@@ -102,7 +102,7 @@ export const UsersPanel: React.FC<UsersPanelProps> = ({
         {/* top users — с🔥 и количеством */}
         {topUsers.map((u, i) => (
           <div
-            key={u}
+            key={`top-${u}-${i}`}
             className={`font-bold text-orange-400 flex items-center`}
             title={u}
           >
@@ -114,8 +114,8 @@ export const UsersPanel: React.FC<UsersPanelProps> = ({
         ))}
 
         {/* остальные */}
-        {otherUsers.slice(0, expanded ? undefined : MAX_VISIBLE - TOP_N).map((u) => (
-          <div key={u} className="text-gray-200 flex items-center" title={u}>
+        {otherUsers.slice(0, expanded ? undefined : MAX_VISIBLE - TOP_N).map((u, i) => (
+          <div key={`rest-${u}-${i}`} className="text-gray-200 flex items-center" title={u}>
             {truncate(u, 12)}
             {u === username && <span className="ml-1 text-emerald-300">•</span>}
           </div>
