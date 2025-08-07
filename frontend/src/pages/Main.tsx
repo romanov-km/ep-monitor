@@ -229,13 +229,17 @@ const App = observer(function App() {
       </Helmet>
 
       <div className="p-4 font-mono max-w-screen-lg mx-auto">
+        <div className="bg-black/45 flex justify-between">
+         <LanguageSwitcher language={language} setLanguage={setLanguage} />
         <SoundSettings />
-
+        </div>
+     
+        
         <div
           className={`p-2 rounded mb-4 text-sm ${
             isAuthUp
-              ? "bg-green-700 text-white"
-              : "bg-red-600 text-white animate-pulse"
+              ? "bg-green-800 text-white"
+              : "bg-red-900 text-white animate-pulse"
           }`}
         >
           {language === "ru" ? (
@@ -252,6 +256,7 @@ const App = observer(function App() {
                   </div>
                 )}
               </div>
+              
             </>
           ) : (
             <>
@@ -269,18 +274,17 @@ const App = observer(function App() {
               </div>
             </>
           )}
+          
         </div>
 
         <h1 className="text-1xl font-bold mb-4">{t.title}</h1>
-
-        <LanguageSwitcher language={language} setLanguage={setLanguage} />
 
         {showTelegram && <TelegramBlock t={t} language={language} />}
 
         <div className="my-2 flex gap-2 flex-wrap">
           <button
             onClick={() => setShowTelegram((prev) => !prev)}
-            className="text-sm bg-blue-700 hover:bg-blue-800 text-white px-3 py-1 rounded"
+            className="text-sm bg-green-800 hover:bg-blue-800 text-white px-3 py-1 rounded"
           >
             {showTelegram ? t.tgHide : t.tgShow}
           </button>
@@ -297,21 +301,23 @@ const App = observer(function App() {
 
           <button
             onClick={() => setShowGame((prev) => !prev)}
-            className="text-sm bg-purple-700 hover:bg-purple-800 text-white px-3 py-1 rounded"
+            className="text-sm bg-green-800 hover:bg-purple-800 text-white px-3 py-1 rounded"
           >
             {showGame
               ? `${t.hideGame} — 🐉 ${miniGameStats.level} | 💰 ${miniGameStats.gold} | ⚔️ ${miniGameStats.dps}`
               : `${t.game} — 🐉 ${miniGameStats.level} | 💰 ${miniGameStats.gold} | ⚔️ ${miniGameStats.dps}`}
           </button>
         </div>
-
-        <PatchVersion
+              <div className="flex align-center">
+<PatchVersion
           version={patchInfo.version}
           checked_at={patchInfo.checked_at}
           changed_at={patchInfo.changed_at}
           language={language}
         />
-
+        <RealmStatusList />
+              </div>
+        
         {showPatchBanner && patchInfo.version && (
           <PatchModal
             version={patchInfo.version}
@@ -320,7 +326,6 @@ const App = observer(function App() {
           />
         )}
 
-        <RealmStatusList />
         <RealmChat
           realm="Gurubashi PVP"
           username={username}

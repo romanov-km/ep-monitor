@@ -18,7 +18,7 @@ const LoginPage: React.FC = () => {
     <div className="bg-gray-800 text-white min-h-screen min-w-screen relative">
       {/* Фон */}
       <img
-        src="/public/bg2.png"
+        src="/public/bg.png"
         alt="Fantasy jungle landscape"
         className="absolute inset-0 w-full h-full object-cover"
       />

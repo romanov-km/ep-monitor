@@ -12,7 +12,7 @@ export const RealmStatusList: React.FC = observer(() => {
   }, []);
 
   return (
-    <div className="flex p-4 px-2 justify-center">
+    <div className="flex p- p-2 justify-center">
       <div className="grid grid-cols-1 sm:flex sm:space-x-4 overflow-x-auto">
       {realmStore.realms.map((realm) => (
           <RealmCard

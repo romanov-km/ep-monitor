@@ -36,7 +36,7 @@ export const UsersPanel: React.FC<UsersPanelProps> = ({
             key={i}
             className={
                 u === username
-                  ? "text-green-400 font-semibold"
+                  ? "text-green-800 font-semibold"
                   : ""
               }
             title={u}

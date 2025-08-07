@@ -34,14 +34,14 @@ const PatchVersion: React.FC<PatchVersionProps> = ({
 
   if (!version) {
     return (
-      <div className="mb-4 p-2 bg-slate-700 rounded text-white text-sm">
+      <div className="p-2 bg-black/85 rounded text-white text-sm">
         {t.patchUnknown || "Нет данных о патче"}
       </div>
     );
   }
 
   return (
-    <div className="mb-4 p-2 bg-slate-700 rounded text-white text-sm">
+    <div className="p-2 bg-black/40 rounded text-white text-sm">
       <div>
         <b>🆕 {t.patchCurrent || "Patch version"}:</b>{" "}
         <span className="font-mono">{version}</span>

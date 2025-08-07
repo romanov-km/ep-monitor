@@ -1,10 +1,24 @@
 import { observer } from "mobx-react-lite";
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { soundStore } from "../stores/soundStore";
 
 const SoundSettings: React.FC = observer(() => {
   const { soundSettings } = soundStore;
   const [open, setOpen] = useState(false);
+  const panelRef = useRef<HTMLDivElement>(null);
+
+  // Закрытие по клику вне
+  useEffect(() => {
+    if (!open) return;
+    const handleClick = (e: MouseEvent) => {
+      // @ts-ignore
+      if (panelRef.current && !panelRef.current.contains(e.target)) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [open]);
 
   const toggleSettings = () => setOpen((prev) => !prev);
 
@@ -34,12 +48,9 @@ const SoundSettings: React.FC = observer(() => {
   };
 
   return (
-    <div className="flex flex-wrap items-center gap-1 justify-end bg-black text-white px-2 py-2 border-b border-gray-700">
-      {/* Заголовок */}
-      <h2 className="text-lg font-semibold mr-2 truncate max-w-[150px] sm:max-w-none"></h2>
-
+    <div className="flex flex-wrap gap-1 text-white px-2 py-2 border-b border-gray-700 place-content-evenly">
       {/* Кнопки-индикаторы без горизонтального скрола */}
-      <div className="flex flex-wrap gap-1 max-w-full sm:max-w-none">
+      <div className="flex flex-wrap gap-1 max-w-full sm:max-w-none justify-self-end">
         {(Object.keys(soundSettings) as (keyof typeof soundSettings)[]).map(
           (key) => {
             const event = soundSettings[key];
@@ -54,7 +65,7 @@ const SoundSettings: React.FC = observer(() => {
                 className={`flex items-center text-xs px-2 py-1 rounded select-none transition-colors
                 ${
                   event.enabled
-                    ? "bg-green-600 hover:bg-green-500"
+                    ? "bg-green-800 hover:bg-green-500"
                     : "bg-gray-800 hover:bg-gray-700"
                 }`}
                 title={eventLabels[key]}
@@ -64,17 +75,21 @@ const SoundSettings: React.FC = observer(() => {
             );
           }
         )}
-      </div>
-      <button onClick={toggleSettings} className="text-xl focus:outline-none">
-        ⚙️
-      </button>
-      {/* Кнопка настроек */}
-      <div className="relative ml-2 sm:ml-4">
-        {/* Панель настроек */}
-        {open && (
-          <div className="absolute right-0 mt-2 w-72 sm:w-80 max-w-[calc(100vw-1rem)] bg-gray-900 border border-gray-600 text-sm p-4 rounded shadow-lg z-50 overflow-y-auto max-h-[80vh]">
-            {(Object.keys(soundSettings) as (keyof typeof soundSettings)[]).map(
-              (key) => {
+        
+        {/* Кнопка настроек */}
+        <div className="relative ml-2 sm:ml-4" ref={panelRef}>
+          <button onClick={toggleSettings} className="text-xl focus:outline-none">
+          ⚙️
+        </button>
+          {/* Панель настроек */}
+          {open && (
+            <div
+              
+              className="absolute right-0 top-full mt-1 w-72 sm:w-80 max-w-[calc(100vw-1rem)] bg-black/85 border border-gray-600 text-sm p-4 rounded shadow-lg z-50 overflow-y-auto max-h-[80vh]"
+            >
+              {(
+                Object.keys(soundSettings) as (keyof typeof soundSettings)[]
+              ).map((key) => {
                 const event = soundSettings[key];
                 return (
                   <div
@@ -88,10 +103,10 @@ const SoundSettings: React.FC = observer(() => {
                           enabled: !soundSettings[key].enabled,
                         })
                       }
-                      className={`w-full flex justify-between items-center px-2 py-1 rounded text-sm font-semibold transition-colors
+                      className={`w-full flex items-center px-2 py-1 rounded text-sm font-semibold transition-colors
                       ${
                         event.enabled
-                          ? "bg-green-600 hover:bg-green-500"
+                          ? "bg-green-800 hover:bg-green-500"
                           : "bg-gray-800 hover:bg-gray-700"
                       }`}
                     >
@@ -130,7 +145,7 @@ const SoundSettings: React.FC = observer(() => {
                                 soundType: e.target.value,
                               })
                             }
-                            className="w-full bg-gray-800 text-white border border-gray-600 px-2 py-1 mt-1 text-xs"
+                            className="w-full bg-black/85 text-white border border-gray-600 px-2 py-1 mt-1 text-xs"
                           >
                             {soundOptions.map((option) => (
                               <option key={option.value} value={option.value}>
@@ -151,20 +166,20 @@ const SoundSettings: React.FC = observer(() => {
                     )}
                   </div>
                 );
-              }
-            )}
+              })}
 
-            {/* Глобальная остановка */}
-            <div className="border-t border-gray-700 pt-2">
-              <button
-                onClick={() => soundStore.stop()}
-                className="text-red-400 text-xs hover:text-red-300"
-              >
-                ⏹️ Stop All Sounds
-              </button>
+              {/* Глобальная остановка */}
+              <div className="border-t border-gray-700 pt-2">
+                <button
+                  onClick={() => soundStore.stop()}
+                  className="text-red-400 text-xs hover:text-red-300"
+                >
+                  ⏹️ Stop All Sounds
+                </button>
+              </div>
             </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
     </div>
   );

@@ -95,7 +95,7 @@ export const DebugPanel: React.FC = () => {
       };
 
   return (
-    <div className="mt-4 border p-3 rounded bg-gray-800 text-white text-sm">
+    <div className="mt-4 border p-3 rounded bg-black/40 border-gray-700 text-white text-sm">
     <p className="mb-2">
       🧪 <strong>Server Panel</strong> — Tick the checkbox at the top of the page and try!
     </p>
@@ -104,7 +104,7 @@ export const DebugPanel: React.FC = () => {
       <button
         onClick={liftServer}
         disabled={loading !== null}
-        className="bg-blue-600 hover:bg-blue-700 px-3 py-1 rounded flex items-center"
+        className="bg-green-800 hover:bg-blue-700 px-3 py-1 rounded flex items-center"
       >
         {loading === "lift" ? (
           <>
@@ -118,7 +118,7 @@ export const DebugPanel: React.FC = () => {
       <button
         onClick={crashServer}
         disabled={loading !== null}
-        className="bg-purple-600 hover:bg-purple-700 px-3 py-1 rounded flex items-center"
+        className="bg-green-800 hover:bg-purple-700 px-3 py-1 rounded flex items-center"
       >
         {loading === "crash" ? (
           <>

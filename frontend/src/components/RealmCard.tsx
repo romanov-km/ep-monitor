@@ -24,13 +24,13 @@ export const RealmCard: React.FC<RealmCardProps> = observer(
 
     const isDown = status === "DOWN";
     const cardColor = isDown
-      ? "bg-red-800 border-red-600 hover:bg-red-700"
-      : "bg-green-800 border-green-600 hover:bg-green-700";
+      ? "bg-red-900 border-red-600 hover:bg-red-700"
+      : "bg-green-900 border-green-600 hover:bg-green-700";
     const statusColor = isDown ? "text-red-400" : "text-green-400";
 
     return (
       <div
-        className={`rounded-md p-3 m-1 border ${cardColor} text-gray-100 transition-colors shadow-sm`}
+        className={`rounded-md p-2 m-0.5 border ${cardColor} text-gray-100 transition-colors shadow-sm`}
       >
         {/* Верхняя строка: иконка + статус */}
         <div className="flex items-center justify-between mb-2">

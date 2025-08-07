@@ -44,7 +44,7 @@ const CustomTooltip = ({ active, payload }: any) => {
 
 const StatusChart: React.FC<StatusChartProps> = ({ chartData }) => {
   return (
-    <div className="mb-6 h-22">
+    <div className="mb-6 h-22 bg-black/40">
       {chartData.length === 0 ? (
         <p className="text-gray-500">Нет данных для графика</p>
       ) : (

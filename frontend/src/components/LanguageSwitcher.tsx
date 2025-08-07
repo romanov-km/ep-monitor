@@ -10,11 +10,11 @@ const LanguageSwitcher: React.FC<LanguageSwitcherProps> = ({
   setLanguage,
 }) => {
   return (
-    <div className="mb-4">
+    <div className="">
       <button
         onClick={() => setLanguage("ru")}
         className={`mr-2 px-2 py-1 border ${
-          language === "ru" ? "bg-green-500 text-white" : "border-gray-600"
+          language === "ru" ? "bg-green-800 text-white" : "border-gray-600"
         }`}
       >
         🇷🇺 Русский
@@ -22,7 +22,7 @@ const LanguageSwitcher: React.FC<LanguageSwitcherProps> = ({
       <button
         onClick={() => setLanguage("en")}
         className={`px-2 py-1 border ${
-          language === "en" ? "bg-green-500 text-white" : "border-gray-600"
+          language === "en" ? "bg-green-800 text-white" : "border-gray-600"
         }`}
       >
         🇬🇧 English

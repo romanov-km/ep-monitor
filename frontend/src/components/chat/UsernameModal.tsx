@@ -41,8 +41,8 @@ const UsernameModal: React.FC<UsernameModalProps> = ({ error, wait, onSubmit, cu
   }, []);
 
   return (
-    <div className="fixed inset-0 flex items-center justify-center bg-black/70 z-50">
-      <div className="bg-gray-900 border border-gray-700 rounded-xl p-6 shadow-lg min-w-[320px]">
+    <div className="fixed inset-0 flex items-center justify-center bg-black/85 z-50">
+      <div className=" border border-gray-700 rounded-xl p-6 shadow-lg min-w-[320px]">
         <h3 className="text-lg font-semibold mb-2 text-white">Choose a nickname for the chat</h3>
         {error && (
           <div className="mb-2 text-red-400 text-sm">
@@ -56,7 +56,7 @@ const UsernameModal: React.FC<UsernameModalProps> = ({ error, wait, onSubmit, cu
         )}
         <div className="flex gap-2 mt-2">
           <input
-            className="flex-1 px-3 py-2 rounded border border-gray-600 bg-gray-800 text-white"
+            className="flex-1 px-3 py-2 rounded border border-gray-600 bg-black/85 text-white"
             placeholder="Enter a new nickname"
             value={name}
             onChange={(e) => setName(e.target.value)}
@@ -72,7 +72,7 @@ const UsernameModal: React.FC<UsernameModalProps> = ({ error, wait, onSubmit, cu
         </div>
         <div className="flex gap-2 mt-4">
           <button
-            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded"
+            className="bg-green-800 hover:bg-blue-700 text-white px-4 py-2 rounded"
             onClick={() => onSubmit(name)}
             disabled={!name.trim()}
           >
