@@ -40,6 +40,7 @@ const RealmChat: React.FC<RealmChatProps> = observer(
       isConnected,
       connectionStatus,
       manualReconnect,
+      userActivity
     } = useRealmChatSocket(realm, username, {
       onError: (msg) => {
         setError(msg);
@@ -297,6 +298,7 @@ const RealmChat: React.FC<RealmChatProps> = observer(
             userCount={userCount}
             onlineUsers={onlineUsers}
             username={username}
+            userActivity={userActivity}
           />
         </div>
 

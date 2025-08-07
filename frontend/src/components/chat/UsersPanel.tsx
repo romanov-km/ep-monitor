@@ -4,6 +4,7 @@ interface UsersPanelProps {
   userCount: number;
   onlineUsers: string[];
   username: string;
+  userActivity: Record<string, number>;
 }
 
 const MAX_VISIBLE = 10;
@@ -13,6 +14,7 @@ export const UsersPanel: React.FC<UsersPanelProps> = ({
   userCount,
   onlineUsers,
   username,
+  userActivity,
 }) => {
   const [expanded, setExpanded] = useState(false);
 
@@ -21,17 +23,21 @@ export const UsersPanel: React.FC<UsersPanelProps> = ({
   // Для сравнения прошлого списка
   const prevUsers = useRef<string[]>([]);
 
+  const TOP_ACTIVE = 3;
+  const mostActive = [...onlineUsers]
+    .filter((u) => !newUsers.includes(u))
+    .sort((a, b) => (userActivity[b] || 0) - (userActivity[a] || 0))
+    .slice(0, TOP_ACTIVE);
+
   // Следим за изменением onlineUsers
   useEffect(() => {
-    const added = onlineUsers.filter(u => !prevUsers.current.includes(u));
+    const added = onlineUsers.filter((u) => !prevUsers.current.includes(u));
     if (added.length) {
-      setNewUsers(users =>
-        Array.from(new Set([...users, ...added]))
-      );
+      setNewUsers((users) => Array.from(new Set([...users, ...added])));
       // Удаляем новых через N секунд
-      added.forEach(u => {
+      added.forEach((u) => {
         setTimeout(() => {
-          setNewUsers(users => users.filter(x => x !== u));
+          setNewUsers((users) => users.filter((x) => x !== u));
         }, PING_DURATION);
       });
     }
@@ -61,29 +67,66 @@ export const UsersPanel: React.FC<UsersPanelProps> = ({
         <span className="text-emerald-400 font-mono ml-1">{userCount}</span>
       </h3>
       <div className="text-xs max-h-60 overflow-y-auto space-y-1 pr-1">
-        {visible.filter(Boolean).map((u, i) => (
-          <div
-            key={i}
-            title={u}
-            className={
-              u === username
-                ? "text-emerald-400 font-semibold flex items-center drop-shadow"
-                : "text-gray-200 hover:bg-white/10 hover:text-white rounded px-1 flex items-center transition-colors"
-            }
-          >
-            {/* Показываем пинг только если этот юзер новый */}
-            {newUsers.includes(u) && <OnlinePingDot />}
-            {truncate(u, 20)}
-            {u === username && (
-              <span className="ml-1 text-xs text-emerald-300">• you</span>
-            )}
-          </div>
-        ))}
+        {/* Новые юзеры */}
+        {newUsers
+          .filter((u) => visible.includes(u))
+          .map((u) => (
+            <div
+              key={"new-" + u}
+              className="flex items-center font-semibold text-emerald-400 truncate w-full"
+            >
+              <OnlinePingDot />
+              <span className="truncate max-w-[120px]">{truncate(u, 20)}</span>
+              {u === username && (
+                <span className="ml-1 text-xs text-emerald-300">• you</span>
+              )}
+            </div>
+          ))}
 
+        {/* ТОП активные (без дубликатов и без новых) */}
+        {mostActive
+          .filter((u) => !newUsers.includes(u))
+          .map((u) => (
+            <div
+              key={"active-" + u}
+              className="flex items-center font-semibold text-orange-300 truncate w-full"
+            >
+              <span className="mr-1">🔥</span>
+              <span className="truncate max-w-[120px]">{truncate(u, 20)}</span>
+              <span className="ml-1 text-[10px] text-orange-400">
+                ({userActivity[u] || 0})
+              </span>
+              {u === username && (
+                <span className="ml-1 text-xs text-emerald-300">• you</span>
+              )}
+            </div>
+          ))}
+
+        {/* Остальные */}
+        {visible
+          .filter((u) => !newUsers.includes(u) && !mostActive.includes(u))
+          .map((u) => (
+            <div
+              key={u}
+              className={
+                "truncate w-full flex items-center " +
+                (u === username
+                  ? "text-emerald-400 font-semibold"
+                  : "text-gray-200 hover:bg-white/10 hover:text-white rounded px-1 transition-colors")
+              }
+            >
+              <span className="truncate max-w-[120px]">{truncate(u, 20)}</span>
+              {u === username && (
+                <span className="ml-1 text-xs text-emerald-300">• you</span>
+              )}
+            </div>
+          ))}
+
+        {/* Кнопка разворота */}
         {hidden > 0 && (
           <button
             onClick={() => setExpanded(!expanded)}
-            className="mt-2 text-xs px-2 py-0.5 bg-gray-700/70 hover:bg-blue-600 text-blue-200 hover:text-white rounded-full shadow transition"
+            className="mt-2 text-xs px-2 py-0.5 bg-gray-700/70 hover:bg-blue-600 text-blue-200 hover:text-white rounded-full shadow transition w-full"
           >
             {expanded ? "Collapse list" : `+${hidden} more`}
           </button>

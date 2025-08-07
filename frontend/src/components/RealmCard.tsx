@@ -43,7 +43,7 @@ export const RealmCard: React.FC<RealmCardProps> = observer(
         <div className="flex items-center justify-between mb-2">
           <span className="text-2xl drop-shadow">{icon}</span>
           <span
-            className={`text-xs font-extrabold uppercase tracking-widest ${statusColor}`}
+            className={`text-xs font-extrabold uppercase tracking-widest ${statusColor} `}
           >
             {status}
           </span>

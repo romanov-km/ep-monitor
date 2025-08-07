@@ -38,6 +38,7 @@ export const useRealmChatSocket = (
   const reconnectBlockedRef = useRef(false);
   const reconnectAttemptsRef = useRef(0);
   const maxReconnectAttempts = options?.maxReconnectAttempts ?? 10;
+  const [userActivity, setUserActivity] = useState<Record<string, number>>({});
 
   const safeClose = () => {
     const sock = socketRef.current;
@@ -155,6 +156,11 @@ export const useRealmChatSocket = (
           break;
         case "new_message":
           setMessages((prev) => [...prev, data.entry]);
+          // Считаем сообщения по пользователю:
+          setUserActivity((prev) => ({
+            ...prev,
+             [data.entry.user]: (prev[data.entry.user] || 0) + 1,
+               }));
           options?.onNewMessage?.(data.entry);
           break;
         case "user_count":
@@ -290,6 +296,7 @@ export const useRealmChatSocket = (
     onlineUsers,
     isConnected,
     connectionStatus,
-    manualReconnect
+    manualReconnect,
+    userActivity
   };
 };
