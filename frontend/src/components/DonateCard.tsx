@@ -76,7 +76,6 @@ export const DonatCard: React.FC = () => {
             <li className="text-gray-500 text-xs">no donats 😔</li>
           )}
           {donations
-            .filter((d) => d.is_shown === 1)
             .slice(0, 5)
             .map((d) => (
               <li key={d.id} className="flex justify-between text-sm">
