@@ -155,7 +155,8 @@ const RealmChat: React.FC<RealmChatProps> = observer(
     };
 
     return (
-      <div className="w-full mx-auto mt-4 mb-4 p-4 bg-black/65 border border-gray-700 rounded-lg shadow-sm">
+      <div className="w-full mx-auto mt-4 mb-4 p-6 bg-black/55 border border-gray-700 rounded-2xl shadow-2xl backdrop-blur-md">
+      
         {/* header */}
         <div className="flex justify-between items-center mb-3">
           <div className="flex items-center gap-2">
@@ -234,14 +235,23 @@ const RealmChat: React.FC<RealmChatProps> = observer(
                         })}
                       </div>
                       <div
-                        className={`px-3 py-1 max-w-[90vw] sm:max-w-[80%] break-words break-all rounded-lg shadow-sm text-sm
-                          ${
-                            isOwn
-                              ? "bg-green-800 text-white"
-                              : "bg-black/65 text-gray-100"
-                          }`}
+                        className={`px-4 py-2 max-w-[90vw] sm:max-w-[80%] break-words rounded-xl shadow-md border transition
+      ${
+        isOwn
+          ? "bg-green-900/80 border-green-500 text-white shadow-green-800/20"
+          : "bg-black/10 border-gray-700 text-gray-100 backdrop-blur-sm"
+      }`}
+                        style={{
+                          animation: "fadeIn 0.25s", // если анимация нужна
+                        }}
                       >
-                        <span className="font-semibold mr-1 truncate max-w-[100px] inline-block align-middle">
+                        <span
+                          className={`font-semibold mr-1 truncate max-w-[100px] inline-block align-middle ${
+                            isOwn
+                              ? "text-emerald-400 drop-shadow"
+                              : "text-sky-200"
+                          }`}
+                        >
                           {msg.user}:
                         </span>
                         {msg.text}
@@ -257,7 +267,7 @@ const RealmChat: React.FC<RealmChatProps> = observer(
             <div className="mt-3 flex gap-2">
               <input
                 type="text"
-                className="flex-1 p-2 rounded border border-gray-600 text-white placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                className="flex-1 p-3 rounded-xl border border-gray-700 bg-black/30 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-600"
                 placeholder={
                   connectionStatus === "connecting"
                     ? "Connecting…"
@@ -275,7 +285,7 @@ const RealmChat: React.FC<RealmChatProps> = observer(
               <button
                 onClick={handleSend}
                 disabled={!text.trim() || connectionStatus !== "connected"}
-                className="px-4 py-2 rounded bg-green-800 hover:bg-blue-700 text-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                className="px-5 py-2 rounded-xl bg-green-700 hover:bg-blue-700 shadow-lg text-white font-bold transition"
               >
                 Send
               </button>
