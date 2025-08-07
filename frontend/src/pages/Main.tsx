@@ -312,7 +312,7 @@ const App = observer(function App() {
                 : `${t.game} — 🐉 ${miniGameStats.level} | 💰 ${miniGameStats.gold} | ⚔️ ${miniGameStats.dps}`}
             </button>
           </div>
-          <div className="flex align-center">
+          <div className="flex align-center gap-2">
             <PatchVersion
               version={patchInfo.version}
               checked_at={patchInfo.checked_at}

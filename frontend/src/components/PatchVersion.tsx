@@ -31,7 +31,7 @@ const PatchVersion: React.FC<PatchVersionProps> = ({
 
   if (!version) {
     return (
-      <div className="p-3 bg-black/80 backdrop-blur-md rounded-2xl text-white text-sm shadow-lg mb-2">
+      <div className="p-3 bg-black/80 backdrop-blur-md rounded-2xl text-white text-sm shadow-lg">
         {t.patchUnknown || "Нет данных о патче"}
       </div>
     );
