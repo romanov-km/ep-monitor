@@ -27,19 +27,50 @@ const currencySymbols: Record<string, string> = {
 export const DonatCard: React.FC = () => {
   const [donations, setDonations] = useState<Donation[]>([]);
   const [current, setCurrent] = useState(0);
+  const [showAll, setShowAll] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    fetch(`${API_BASE}/api/donations`)
-      .then((res) => res.json())
-      .then((data: Donation[]) => {
-        // Если твоя ручка отдаёт именно data.data:
-        // .then((resp) => resp.json()).then(data => data.data)
-        setDonations(data);
-        // Фильтруем только публичные донаты
-        const visible = data.filter((d) => d.is_shown === 1);
-        const total = visible.reduce((sum, d) => sum + Number(d.amount), 0);
+    let isMounted = true;
+    const load = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const res = await fetch(`${API_BASE}/api/donations`);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const raw = await res.json();
+        const data: Donation[] = Array.isArray(raw)
+          ? raw
+          : Array.isArray((raw as any)?.data)
+          ? (raw as any).data
+          : [];
+        const sorted = [...data].sort((a, b) => {
+          const av = Number(a.amount_in_user_currency ?? a.amount ?? 0);
+          const bv = Number(b.amount_in_user_currency ?? b.amount ?? 0);
+          return bv - av;
+        });
+        const total = sorted.reduce(
+          (sum, d) =>
+            sum + Number(d.amount_in_user_currency ?? d.amount ?? 0),
+          0
+        );
+        if (!isMounted) return;
+        setDonations(sorted);
         setCurrent(total);
-      });
+      } catch (e: any) {
+        if (!isMounted) return;
+        setDonations([]);
+        setCurrent(0);
+        setError(e?.message || "failed");
+      } finally {
+        if (isMounted) setLoading(false);
+      }
+    };
+    load();
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   const percent = Math.min(100, Math.round((current / goal) * 100));
@@ -72,20 +103,33 @@ export const DonatCard: React.FC = () => {
       <div className="">
         <div className="text-xs text-gray-400 mb-1">top donators:</div>
         <ul className="space-y-1">
-          {donations.length === 0 && (
+          {loading && <li className="text-gray-500 text-xs">loading…</li>}
+          {!loading && error && (
+            <li className="text-red-400 text-xs">failed to load donations</li>
+          )}
+          {!loading && !error && donations.length === 0 && (
             <li className="text-gray-500 text-xs">no donats 😔</li>
           )}
-          {donations.slice(0, 5).map((d) => (
-            <li key={d.id} className="flex justify-between text-sm">
-              <span className="text-green-300 font-semibold">
-                {d.username || d.name}
-              </span>
-              <span className="text-gray-200">
-                {d.amount} {currencySymbols[d.currency] || d.currency}
-              </span>
-            </li>
-          ))}
+          {!loading && !error &&
+            (showAll ? donations : donations.slice(0, 5)).map((d) => (
+              <li key={d.id} className="flex justify-between text-sm">
+                <span className="text-green-300 font-semibold">
+                  {d.username || d.name}
+                </span>
+                <span className="text-gray-200">
+                  {d.amount} {currencySymbols[d.currency] || d.currency}
+                </span>
+              </li>
+            ))}
         </ul>
+        {!loading && !error && donations.length > 5 && (
+          <button
+            onClick={() => setShowAll((prev) => !prev)}
+            className="mt-1 w-full text-center text-xs text-blue-300 hover:text-blue-400 transition rounded-full bg-black/30 px-3 py-1"
+          >
+            {showAll ? "Show less" : `+${donations.length - 5} more`}
+          </button>
+        )}
       </div>
     </div>
   );
