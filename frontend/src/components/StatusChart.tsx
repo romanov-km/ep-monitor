@@ -54,7 +54,7 @@ const StatusChart: React.FC<StatusChartProps> = ({ chartData }) => {
       border border-cyan-700/30
       rounded-2xl shadow-lg
       max-w-2xl mx-auto
-      h-44 sm:h-56
+      max-h-60 h-60 sm:h-60
       flex items-center
     ">
       {chartData.length === 0 ? (
