@@ -53,7 +53,7 @@ export const useRealmChatSocket = (
         sock.readyState === WebSocket.OPEN ||
         sock.readyState === WebSocket.CONNECTING
       ) {
-        sock.close();
+        sock.close(1000, "Client navigation");
       }
     }
     socketRef.current = null;

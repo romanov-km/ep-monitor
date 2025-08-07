@@ -7,7 +7,7 @@ interface UsersPanelProps {
   userActivity: Record<string, number>;
 }
 
-const MAX_VISIBLE = 10;
+const MAX_VISIBLE = 13;
 const PING_DURATION = 2500; // ms
 const TOP_N = 3;  
 
@@ -39,12 +39,6 @@ export const UsersPanel: React.FC<UsersPanelProps> = ({
   const [newUsers, setNewUsers] = useState<string[]>([]);
   // Для сравнения прошлого списка
   const prevUsers = useRef<string[]>([]);
-
-  // const TOP_ACTIVE = 3;
-  // const mostActive = [...onlineUsers]
-  //   .filter((u) => !newUsers.includes(u))
-  //   .sort((a, b) => (userActivity[b] || 0) - (userActivity[a] || 0))
-  //   .slice(0, TOP_ACTIVE);
 
   // Следим за изменением onlineUsers
   useEffect(() => {
@@ -81,7 +75,7 @@ export const UsersPanel: React.FC<UsersPanelProps> = ({
         <span className="text-emerald-400 font-mono ml-1">{userCount}</span>
       </h3>
       {/* <div className="text-xs max-h-60 overflow-y-auto space-y-1 pr-1"> */}
-      <div className="text-xs max-h-60 overflow-y-hidden pr-1">
+      <div className="text-xs max-h-60 overflow-y-auto pr-1">
         {/* Новые юзеры */}
         {newUsers
           .filter((u) => visible.includes(u))
