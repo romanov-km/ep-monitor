@@ -12,18 +12,19 @@ export const RealmStatusList: React.FC = observer(() => {
   }, []);
 
   return (
-    <div className="flex justify-center">
-      <div className="grid grid-cols-1 sm:flex sm:space-x-4 overflow-x-auto">
-      {realmStore.realms.map((realm) => (
-          <RealmCard
-            key={realm.name}
-            name={realm.name}
-            icon={realm.icon}
-            status={realm.status}
-            time={realm.time}
-          />
-        ))}
-      </div>
-    </div>
-  );
+    
+       <div className="w-full">
+         <div className="flex gap-2 sm:gap-4 overflow-x-auto py-1">
+            {realmStore.realms.map((realm) => (
+              <RealmCard
+                key={realm.name}
+                name={realm.name}
+                icon={realm.icon}
+                status={realm.status}
+                time={realm.time}
+              />
+            ))}
+          </div>
+        </div>
+      );
 });

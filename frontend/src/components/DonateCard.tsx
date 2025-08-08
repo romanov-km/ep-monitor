@@ -24,7 +24,7 @@ const currencySymbols: Record<string, string> = {
   UAH: "₴",
 };
 
-export const DonatCard: React.FC = () => {
+export const DonateCard: React.FC = () => {
   const [donations, setDonations] = useState<Donation[]>([]);
   const [current, setCurrent] = useState(0);
   const [showAll, setShowAll] = useState(false);
@@ -74,13 +74,8 @@ export const DonatCard: React.FC = () => {
   }, []);
 
   const percent = Math.min(100, Math.round((current / goal) * 100));
-
   return (
-    <div className="w-1/5 max-w-xs flex flex-col gap-1 backdrop-blur-lg shadow-2xl rounded-2xl px-2 py-2 transition-all duration-200 hover:shadow-emerald-400/30 hover:shadow-2xl hover:border-emerald-300 bg-black/55">
-      {/* <h3 className="text-xl font-bold text-green-400 mb-1">Поддержи сервер</h3> */}
-      {/* <div className="text-gray-300 text-sm mb-2">
-        1
-      </div> */}
+   <div className="w-full sm:w-64 max-w-full sm:max-w-xs shrink-0 flex flex-col gap-1 backdrop-blur-lg shadow-2xl rounded-2xl px-2 py-2 transition-all duration-200 hover:shadow-emerald-400/30 hover:shadow-2xl hover:border-emerald-300 bg-black/55">
       <a
         href="https://www.donationalerts.com/r/yakuji_" // твоя ссылка
         target="_blank"
@@ -135,4 +130,4 @@ export const DonatCard: React.FC = () => {
   );
 };
 
-export default DonatCard;
+export default DonateCard;

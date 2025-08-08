@@ -22,7 +22,8 @@ import PatchVersion from "../components/PatchVersion";
 import PatchModal from "../components/PatchModal";
 import { Helmet } from "react-helmet";
 import { BackgroundPicker } from "../components/BackgroundPicker";
-import DonatCard from "../components/DonateCard";
+import DonateCard from "../components/DonateCard";
+import VisibilityToggles from "../components/VisibilityToggles";
 
 interface StatusEntry {
   time: string;
@@ -76,6 +77,22 @@ const App = observer(function App() {
     localStorage.setItem("username", name);
     setUsername(name);
   };
+  
+  // рядом с другими useState:
+const [visible, setVisible] = useState<{patch:boolean; realms:boolean; chart:boolean; chat:boolean; log:boolean; debug:boolean; donate: boolean}>(() => {
+  try {
+    return JSON.parse(localStorage.getItem("ui:visible") || "") || {
+      patch: true, realms: true, donate: true, chat: true, debug: true, log: true, chart: true
+    };
+  } catch {
+    return { patch: true, realms: true, donate: true, chat: true, debug: true, log: true, chart: true };
+  }
+});
+
+useEffect(() => {
+  localStorage.setItem("ui:visible", JSON.stringify(visible));
+}, [visible]);
+
 
   useEffect(() => {
     // Один раз на всю сессию!
@@ -211,7 +228,7 @@ const App = observer(function App() {
 
   return (
     <>
-      <div className="pl-4 pr-4 pb-0 font-mono max-w-screen-lg mx-auto">
+     <div className="min-h-screen flex flex-col pl-4 pr-4 pb-0 font-mono max-w-screen-lg mx-auto">
         <Helmet>
           <title>Project Epoch | status tracker, chat, patches, guides</title>
           <meta
@@ -241,7 +258,7 @@ const App = observer(function App() {
           </div>
           <SoundSettings />
         </header>
-        <main>
+        <main className="flex-1 flex flex-col">
           <div
             className={`p-2 rounded mb-4 text-sm ${
               isAuthUp
@@ -312,16 +329,20 @@ const App = observer(function App() {
                 ? `${t.hideGame} — 🐉 ${miniGameStats.level} | 💰 ${miniGameStats.gold} | ⚔️ ${miniGameStats.dps}`
                 : `${t.game} — 🐉 ${miniGameStats.level} | 💰 ${miniGameStats.gold} | ⚔️ ${miniGameStats.dps}`}
             </button>
+            <VisibilityToggles value={visible} onChange={setVisible} />
           </div>
-          <div className="flex align-center gap-2">
-            <PatchVersion
+          <div className="flex flex-col sm:flex-row items-stretch gap-2 sm:gap-3">
+            {visible.patch && (
+              <PatchVersion
               version={patchInfo.version}
               checked_at={patchInfo.checked_at}
               changed_at={patchInfo.changed_at}
               language={language}
             />
-            <RealmStatusList />
-            <DonatCard />
+            )}
+            {visible.realms && <RealmStatusList />}
+            {visible.donate && <DonateCard />}
+            
           </div>
 
           {showPatchBanner && patchInfo.version && (
@@ -331,8 +352,7 @@ const App = observer(function App() {
               language={language}
             />
           )}
-
-          <RealmChat
+{visible.chat && <RealmChat
             realm="Gurubashi PVP"
             username={username}
             onUsernameSubmit={handleUsernameSubmit}
@@ -341,18 +361,19 @@ const App = observer(function App() {
                 soundStore.play("chat");
               }
             }}
-          />
+          />}
+          
 
           <section className="flex flex-col md:flex-row gap-4 mb-6">
             <div className="flex-1">
-              <StatusChart chartData={chartData} />
+             {visible.chart && <StatusChart chartData={chartData} />} 
             </div>
             <div className="flex-1 min-w-[240px]">
-              <StatusList statuses={statuses} />
+             {visible.log && <StatusList statuses={statuses} />} 
             </div>
           </section>
 
-          <DebugPanel />
+          {visible.debug && <DebugPanel />}
 
           <Footer t={t} />
         </main>

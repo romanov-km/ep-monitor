@@ -23,6 +23,21 @@ export const BackgroundPicker = () => {
 
   const isMobile = window.innerWidth < 700;
 
+  
+    const [nudge, setNudge] = useState(false);
+    const NUDGE_EVERY = 5 * 60 * 1000; // 5 минут
+    useEffect(() => {
+      const kick = () => {
+        setNudge(true);
+        setTimeout(() => setNudge(false), 1800);
+        localStorage.setItem("bg:nudgeAt", String(Date.now()));
+      };
+      const last = Number(localStorage.getItem("bg:nudgeAt") || "0");
+      if (Date.now() - last > 60 * 60 * 1000) setTimeout(kick, 1200); // при заходе, если >1ч
+      const id = setInterval(kick, NUDGE_EVERY);
+      return () => clearInterval(id);
+    }, []);
+
   useEffect(() => {
     document.body.style.setProperty("--site-bg", currentBg);
     localStorage.setItem("siteBg", currentBg);
@@ -48,7 +63,7 @@ export const BackgroundPicker = () => {
         className={`
           w-10 h-10 rounded-lg border-2 bg-gray-900/80 shadow flex items-center justify-center relative
           ${open ? "border-green-400 ring-2 ring-green-500" : "border-gray-700"}
-          transition
+          transition ${nudge ? "bg-picker-nudge ring-2 ring-emerald-400 border-emerald-400" : ""}
         `}
         title="Change background"
         onClick={() => setOpen((o) => !o)}
@@ -102,6 +117,7 @@ export const BackgroundPicker = () => {
               onClick={() => {
                 setCurrentBg(opt.value);
                 setOpen(false);
+                setNudge(false);
               }}
               className="w-9 h-9 rounded-lg border border-gray-600 hover:border-green-400 p-0.5 bg-gray-800/80 flex items-center justify-center transition"
               title={opt.name}

@@ -28,9 +28,8 @@ export const RealmCard: React.FC<RealmCardProps> = observer(
       "hover:shadow-2xl",
       "hover:border-emerald-300",
       "bg-black/55",
-      isDown
-        ? "border-red-500/70 hover:border-red-400"
-        : "border-green-500/60"
+  +   "min-w-[220px] sm:min-w-[240px] shrink-0",
+      isDown ? "border-red-500/70 hover:border-red-400" : "border-green-500/60"
     ].join(" ");
 
     const statusColor = isDown

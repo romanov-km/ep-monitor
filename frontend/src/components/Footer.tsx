@@ -9,13 +9,14 @@ interface FooterProps {
 
 const Footer: React.FC<FooterProps> = ({ t }) => {
   return (
-    <footer className="
-      mt-10 pt-6 pb-4 px-2
-      bg-black/40 backdrop-blur border-t border-gray-700/60
-      rounded-t-2xl shadow-inner
-      text-sm text-gray-200 text-center space-y-2
-      max-w-screen-md mx-auto
-    ">
+
+   <footer className="
+       mt-auto pt-6 pb-4 px-2
+       bg-black/40 backdrop-blur border-t border-gray-700/60
+       rounded-t-2xl shadow-inner
+       text-sm text-gray-200 text-center space-y-2
+       max-w-screen-md mx-auto
+     ">
       <p className="font-semibold text-emerald-400 drop-shadow-sm">
         💼 Looking for a frontend & backend dev? Contact me:
       </p>
