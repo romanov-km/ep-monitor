@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 const API_BASE = import.meta.env.VITE_API_BASE;
 
-const goal = 10000; // Цель месяца
+const goal = 7000; // Цель месяца
 
 export interface Donation {
   id: number;
@@ -77,16 +77,21 @@ export const DonateCard: React.FC = () => {
   return (
    <div className="w-full sm:w-64 max-w-full sm:max-w-xs shrink-0 flex flex-col gap-1 backdrop-blur-lg shadow-2xl rounded-2xl px-2 py-2 transition-all duration-200 hover:shadow-emerald-400/30 hover:shadow-2xl hover:border-emerald-300 bg-black/55">
       <a
-        href="https://www.donationalerts.com/r/yakuji_" // твоя ссылка
+        href="https://www.donationalerts.com/r/yakuji_"
         target="_blank"
         rel="noopener noreferrer"
         className="bg-emerald-700 hover:bg-emerald-600 text-black font-semibold py-2 px-4 rounded-xl text-center transition"
       >
         Donate
       </a>
+      <p className="text-xs text-gray-300 mt-1 mb-2 text-center">
+  💸 All donations go towards paying for the site and supporting the project!
+</p>
       <div className="">
+        
         <div className="flex justify-between text-xs text-gray-400 mb-1">
-          {/* <span>target:{goal}%</span> */}
+        <span>now:{percent}$</span>
+          <span>target:{goal/100}$</span>
         </div>
         <div className="w-full bg-gray-700 rounded-full h-3 overflow-hidden">
           <div

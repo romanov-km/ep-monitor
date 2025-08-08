@@ -1,4 +1,5 @@
 import { makeAutoObservable } from "mobx";
+import { uiStore } from "./uiStore";
 
 export interface SoundEvent {
   enabled: boolean;
@@ -8,15 +9,15 @@ export interface SoundEvent {
 
 export interface AppSoundSettings {
   realmUp: SoundEvent;
-  authUp: SoundEvent;
   chat: SoundEvent;
   realmDown: SoundEvent;
   patch: SoundEvent;
+  logon: SoundEvent;
 }
 
 const defaultSettings: AppSoundSettings = {
   realmUp: { enabled: true, soundType: "70elite", volume: 1 },
-  authUp: { enabled: true, soundType: "levelup", volume: 1 },
+  logon: { enabled: true, soundType: "levelup", volume: 1 },
   chat: { enabled: true, soundType: "newmsg", volume: 0.6 },
   realmDown: { enabled: true, soundType: "down", volume: 1 },
   patch: { enabled: true, soundType: "levelup", volume: 1 }
@@ -28,6 +29,7 @@ class SoundStore {
     if (saved) {
       const parsed = JSON.parse(saved);
       if (!parsed.realmDown) parsed.realmDown = defaultSettings.realmDown;
+      if (!parsed.authUp && !parsed.logon) parsed.logon = parsed.authUp;
       return parsed;
     }
     return defaultSettings;
@@ -84,6 +86,10 @@ preloadAllSounds() {
 
     const config = this.soundSettings[event];
     if (!config.enabled || !this.userInteracted) return;
+    if (!uiStore.isEventAllowed(event)) {
+      console.log(`sound for ${event} muted: related widget hiden`)
+      return;
+    }
 
     const ext = config.soundType === "newmsg" ? ".ogg" : ".mp3";
     const path = `/sounds/${config.soundType}${ext}`;

@@ -2,6 +2,7 @@ import { observer } from "mobx-react-lite";
 import React, { useEffect, useRef, useState } from "react";
 import { soundStore } from "../stores/soundStore";
 import { createPortal } from "react-dom";
+import { uiStore } from "../stores/uiStore";
 
 const SoundSettings: React.FC = observer(() => {
   const { soundSettings } = soundStore;
@@ -48,7 +49,7 @@ const SoundSettings: React.FC = observer(() => {
   const eventLabels: Record<keyof typeof soundSettings, string> = {
     realmUp: "Up",
     realmDown: "Down",
-    authUp: "Auth",
+    logon: "Logon",
     chat: "Chat",
     patch: "Patch",
   };
@@ -56,7 +57,7 @@ const SoundSettings: React.FC = observer(() => {
   const eventIcons: Record<keyof typeof soundSettings, string> = {
     realmUp: "🟢",
     realmDown: "🔴",
-    authUp: "🔐",
+    logon: "🔐",
     chat: "💬",
     patch: "💾",
   };
@@ -65,9 +66,10 @@ const SoundSettings: React.FC = observer(() => {
     <div className="flex flex-wrap gap-1 text-white px-2 py-2 border-gray-700 place-content-evenly">
       {/* Кнопки-индикаторы */}
       <div className="flex flex-wrap gap-1 max-w-full sm:max-w-none justify-self-end">
-        {(Object.keys(soundSettings) as (keyof typeof soundSettings)[]).map(
+        {/* {(Object.keys(soundSettings) as (keyof typeof soundSettings)[]).map(
           (key) => {
             const event = soundSettings[key];
+            const blocked = !uiStore.isEventAllowed(key);
             return (
               <button
                 key={key}
@@ -82,15 +84,20 @@ const SoundSettings: React.FC = observer(() => {
                       ? "bg-emerald-700/90 text-white  hover:bg-emerald-600"
                       : "bg-black/60 text-gray-400 border border-gray-600 hover:bg-gray-800"
                   }
+                  ${blocked ? "opacity-60 ring-1 ring-amber-400/40" : ""}
                 `}
-                title={eventLabels[key]}
+                title={
+                  blocked
+                    ? `${eventLabels[key]} muted: widjet hidden`
+                    : eventLabels[key]
+                }
               >
                 <span className="mr-1 text-base">{eventIcons[key]}</span>
                 {eventLabels[key]}
               </button>
             );
           }
-        )}
+        )} */}
 
         {/* Кнопка настроек */}
         <div className="relative ml-2 sm:ml-4">
@@ -126,10 +133,28 @@ const SoundSettings: React.FC = observer(() => {
                 <div className="mb-3 text-cyan-200 font-semibold text-base flex items-center gap-2">
                   <span>🔊</span> Sound settings
                 </div>
+                {/* Предупреждение о блокировках */}
+                {(() => {
+                  const msgs: string[] = [];
+                  if (!uiStore.visibility.realms)
+                    msgs.push("Realms sounds are muted (widget hidden)");
+                  if (!uiStore.visibility.patch)
+                    msgs.push("Patch sounds are muted (widget hidden)");
+                  if (!uiStore.visibility.logon)
+                    msgs.push("Logon sounds are muted (widget hidden)");
+                  if (!uiStore.visibility.chat)
+                    msgs.push("Chat sounds are muted (widget hidden)");
+                  return msgs.length ? (
+                    <div className="mb-3 text-xs text-amber-300 bg-amber-900/30 border border-amber-700/40 rounded p-2">
+                      ⚠️ {msgs.join(" • ")}
+                    </div>
+                  ) : null;
+                })()}
                 {(
                   Object.keys(soundSettings) as (keyof typeof soundSettings)[]
                 ).map((key) => {
                   const event = soundSettings[key];
+                  const blocked = !uiStore.isEventAllowed(key);
                   return (
                     <div
                       key={key}
@@ -148,6 +173,7 @@ const SoundSettings: React.FC = observer(() => {
                             ? "bg-emerald-700 hover:bg-emerald-600 text-emerald-100 hover:bg-emerald-700"
                             : "bg-gray-800 text-gray-400 hover:bg-gray-900"
                         }
+                        ${blocked ? "opacity-60 ring-1 ring-amber-400/40" : ""}
                       `}
                       >
                         <span>
@@ -155,6 +181,11 @@ const SoundSettings: React.FC = observer(() => {
                         </span>
                         <span>{event.enabled ? "ON" : "OFF"}</span>
                       </button>
+                      {blocked && (
+                        <div className="mt-2 text-xs text-amber-300">
+                          Muted: related widjet is hidden
+                        </div>
+                      )}
 
                       {/* Детали, показываем только если включено */}
                       {event.enabled && (

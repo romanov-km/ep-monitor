@@ -24,6 +24,7 @@ import { Helmet } from "react-helmet";
 import { BackgroundPicker } from "../components/BackgroundPicker";
 import DonateCard from "../components/DonateCard";
 import VisibilityToggles from "../components/VisibilityToggles";
+import { uiStore } from "../stores/uiStore";
 
 interface StatusEntry {
   time: string;
@@ -77,22 +78,6 @@ const App = observer(function App() {
     localStorage.setItem("username", name);
     setUsername(name);
   };
-  
-  // рядом с другими useState:
-const [visible, setVisible] = useState<{patch:boolean; realms:boolean; chart:boolean; chat:boolean; log:boolean; debug:boolean; donate: boolean}>(() => {
-  try {
-    return JSON.parse(localStorage.getItem("ui:visible") || "") || {
-      patch: true, realms: true, donate: true, chat: true, debug: true, log: true, chart: true
-    };
-  } catch {
-    return { patch: true, realms: true, donate: true, chat: true, debug: true, log: true, chart: true };
-  }
-});
-
-useEffect(() => {
-  localStorage.setItem("ui:visible", JSON.stringify(visible));
-}, [visible]);
-
 
   useEffect(() => {
     // Один раз на всю сессию!
@@ -168,11 +153,11 @@ useEffect(() => {
 
     // Если Auth сервер поднялся
     if (!prevAuthUp && isAuthUp) {
-      soundStore.play("authUp");
+      soundStore.play("logon");
     }
 
     prevAuthStatusRef.current = isAuthUp;
-  }, [isAuthUp, soundStore.soundSettings.authUp]);
+  }, [isAuthUp, soundStore.soundSettings.logon]);
 
   const fetchStatuses = async () => {
     try {
@@ -228,46 +213,95 @@ useEffect(() => {
 
   return (
     <>
-     <div className="min-h-screen flex flex-col pl-4 pr-4 pb-0 font-mono max-w-screen-lg mx-auto">
-     <div
-            className={`p-2 rounded text-sm ${
-              isAuthUp
-                ? "bg-emerald-700 hover:bg-emerald-600 text-white"
-                : "bg-red-900 text-white animate-pulse"
-            }`}
-          >
-            {language === "ru" ? (
-              <>
-                {isAuthUp ? t.authUp : t.authDown} {t.notifications}:{" "}
-                {soundStore.soundSettings.realmUp.enabled &&
-                !soundStore.userInteracted
-                  ? "ВКЛ 🔔"
-                  : "ВЫКЛ 🔕"}
-                <div>
-                  {!soundStore.userInteracted && (
-                    <div className="bg-yellow-600/60 text-white px-3 py-2 rounded mb-3 text-sm shadow animate-pulse">
-                      👆 Для активации звуковых уведомлений кликните по странице
-                    </div>
-                  )}
-                </div>
-              </>
-            ) : (
-              <>
-                {isAuthUp ? t.authUp : t.authDown} {t.notifications}:{" "}
-                {soundStore.soundSettings.realmUp.enabled &&
-                soundStore.userInteracted
-                  ? "ON 🔔"
-                  : "OFF 🔕"}
-                <div>
-                  {!soundStore.userInteracted && (
-                    <div className="bg-yellow-600/60 text-white px-3 py-2 rounded mb-3 text-sm shadow animate-pulse">
-                      👆 To activate sound notifications, click on the page
-                    </div>
-                  )}
-                </div>
-              </>
-            )}
-          </div>
+      <div className="min-h-screen flex flex-col pl-4 pr-4 pb-0 font-mono max-w-screen-lg mx-auto">
+        
+        <div
+          className={`p-2 rounded text-sm ${
+            isAuthUp
+              ? "bg-emerald-700 hover:bg-emerald-600 text-white"
+              : "bg-red-900 text-white animate-pulse"
+          }`}
+        >
+          {language === "ru" ? (
+            <>
+              {isAuthUp ? t.authUp : t.authDown} {t.notifications}:{" "}
+              {soundStore.userInteracted &&
+              Object.entries(soundStore.soundSettings).some(
+                ([k, v]) => v.enabled && uiStore.isEventAllowed(k as any)
+              )
+                ? "ВКЛ 🔔"
+                : "ВЫКЛ 🔕"}
+              <div>
+                {!soundStore.userInteracted && (
+                  <div className="bg-yellow-600/60 text-white px-3 py-2 rounded mb-3 text-sm shadow animate-pulse">
+                    👆 Для активации звуковых уведомлений кликните по странице
+                  </div>
+                )}
+                {soundStore.userInteracted && !uiStore.visibility.realms && (
+                  <div className="text-xs text-amber-200 mt-1">
+                    ⚠️ Realms скрыт — звуки Realms выключены
+                  </div>
+                )}
+                {soundStore.userInteracted && !uiStore.visibility.patch && (
+                  <div className="text-xs text-amber-200">
+                    ⚠️ Patch скрыт — звуки Patch выключены
+                  </div>
+                )}
+                {soundStore.userInteracted && !uiStore.visibility.patch && (
+                  <div className="text-xs text-amber-200">
+                    ⚠️ Logon скрыт — звуки Logon server выключены
+                  </div>
+                )}
+                {soundStore.userInteracted && !uiStore.visibility.patch && (
+                  <div className="text-xs text-amber-200">
+                    ⚠️ Chat скрыт — звуки Chat выключены
+                  </div>
+                )}
+              </div>
+              
+            </>
+          ) : (
+            <>
+            
+              {isAuthUp ? t.authUp : t.authDown} {t.notifications}:{" "}
+              {soundStore.userInteracted &&
+              Object.entries(soundStore.soundSettings).some(
+                ([k, v]) => v.enabled && uiStore.isEventAllowed(k as any)
+              )
+                ? "ON 🔔"
+                : "OFF 🔕"}
+              <div>
+                {!soundStore.userInteracted && (
+                  <div className="bg-yellow-600/60 text-white px-3 py-2 rounded mb-3 text-sm shadow animate-pulse">
+                    👆 To activate sound notifications, click on the page
+                  </div>
+                )}
+                {soundStore.userInteracted && !uiStore.visibility.realms && (
+                  <div className="text-xs text-amber-200 mt-1">
+                    ⚠️ Realms hidden — realm sounds are muted
+                  </div>
+                )}
+                {soundStore.userInteracted && !uiStore.visibility.patch && (
+                  <div className="text-xs text-amber-200">
+                    ⚠️ Patch hidden — patch sounds are muted
+                  </div>
+                )}
+                {soundStore.userInteracted && !uiStore.visibility.logon && (
+                  <div className="text-xs text-amber-200">
+                    ⚠️ Logon hidden — logon sounds are muted
+                  </div>
+                )}
+                {soundStore.userInteracted && !uiStore.visibility.chat && (
+                  <div className="text-xs text-amber-200">
+                    ⚠️ Chat hidden — chat sounds are muted
+                  </div>
+                )}
+                
+              </div>
+              
+            </>
+          )}
+        </div>
         <Helmet>
           <title>Project Epoch | status tracker, chat, patches, guides</title>
           <meta
@@ -296,10 +330,9 @@ useEffect(() => {
             <BackgroundPicker />
           </div>
           <SoundSettings />
+          <VisibilityToggles />
         </header>
         <main className="flex-1 flex flex-col">
-          
-
           <h1 className="text-1xl font-bold mb-4">{t.title}</h1>
 
           {showTelegram && <TelegramBlock t={t} language={language} />}
@@ -330,20 +363,18 @@ useEffect(() => {
                 ? `${t.hideGame} — 🐉 ${miniGameStats.level} | 💰 ${miniGameStats.gold} | ⚔️ ${miniGameStats.dps}`
                 : `${t.game} — 🐉 ${miniGameStats.level} | 💰 ${miniGameStats.gold} | ⚔️ ${miniGameStats.dps}`}
             </button>
-            <VisibilityToggles value={visible} onChange={setVisible} />
           </div>
           <div className="flex flex-col sm:flex-row items-stretch gap-2 sm:gap-3">
-            {visible.patch && (
+            {uiStore.visibility.patch && (
               <PatchVersion
-              version={patchInfo.version}
-              checked_at={patchInfo.checked_at}
-              changed_at={patchInfo.changed_at}
-              language={language}
-            />
+                version={patchInfo.version}
+                checked_at={patchInfo.checked_at}
+                changed_at={patchInfo.changed_at}
+                language={language}
+              />
             )}
-            {visible.realms && <RealmStatusList />}
-            {visible.donate && <DonateCard />}
-            
+            {uiStore.visibility.realms && <RealmStatusList />}
+            {uiStore.visibility.donate && <DonateCard />}
           </div>
 
           {showPatchBanner && patchInfo.version && (
@@ -353,28 +384,29 @@ useEffect(() => {
               language={language}
             />
           )}
-{visible.chat && <RealmChat
-            realm="Gurubashi PVP"
-            username={username}
-            onUsernameSubmit={handleUsernameSubmit}
-            onChatMessage={() => {
-              if (soundStore.soundSettings.chat.enabled) {
-                soundStore.play("chat");
-              }
-            }}
-          />}
           
-
+          { uiStore.visibility.chat && <RealmChat
+              realm="Gurubashi PVP"
+              username={username}
+              onUsernameSubmit={handleUsernameSubmit}
+              onChatMessage={() => {
+                if (soundStore.soundSettings.chat.enabled) {
+                  soundStore.play("chat");
+                }
+              }}
+            />
+          }
+        
           <section className="flex flex-col md:flex-row gap-4 mb-6">
             <div className="flex-1">
-             {visible.chart && <StatusChart chartData={chartData} />} 
+            {uiStore.visibility.chart && <StatusChart chartData={chartData} />}
             </div>
             <div className="flex-1 min-w-[240px]">
-             {visible.log && <StatusList statuses={statuses} />} 
+              {uiStore.visibility.logon && <StatusList statuses={statuses} />}
             </div>
           </section>
 
-          {visible.debug && <DebugPanel />}
+           {uiStore.visibility.debug && <DebugPanel />}
 
           <Footer t={t} />
         </main>
