@@ -229,38 +229,8 @@ useEffect(() => {
   return (
     <>
      <div className="min-h-screen flex flex-col pl-4 pr-4 pb-0 font-mono max-w-screen-lg mx-auto">
-        <Helmet>
-          <title>Project Epoch | status tracker, chat, patches, guides</title>
-          <meta
-            name="description"
-            content="Track the online status of Project Epoch WoW servers. Get notifications, join the chat, and play the idle game!"
-          />
-          <meta
-            property="og:title"
-            content="Project Epoch | status tracker & chat"
-          />
-          <meta
-            property="og:description"
-            content="Project Epoch — real-time server status, patch updates, player chat, and instant notifications!"
-          />
-          <meta
-            property="og:image"
-            content="https://project-epoch.ru/vite.svg"
-          />
-          <meta property="og:type" content="website" />
-          <meta property="og:url" content="https://project-epoch.ru/" />
-        </Helmet>
-
-        <header className="bg-black/50 flex flex-wrap sm:flex-nowrap justify-between items-center rounded-b-2xl border-b border-cyan-800/30 shadow px-2 py-2 max-w-screen-lg mx-auto mb-4">
-          <div className="flex items-center gap-3 mb-2 sm:mb-0">
-            <LanguageSwitcher language={language} setLanguage={setLanguage} />
-            <BackgroundPicker />
-          </div>
-          <SoundSettings />
-        </header>
-        <main className="flex-1 flex flex-col">
-          <div
-            className={`p-2 rounded mb-4 text-sm ${
+     <div
+            className={`p-2 rounded text-sm ${
               isAuthUp
                 ? "bg-emerald-700 hover:bg-emerald-600 text-white"
                 : "bg-red-900 text-white animate-pulse"
@@ -298,6 +268,37 @@ useEffect(() => {
               </>
             )}
           </div>
+        <Helmet>
+          <title>Project Epoch | status tracker, chat, patches, guides</title>
+          <meta
+            name="description"
+            content="Track the online status of Project Epoch WoW servers. Get notifications, join the chat, and play the idle game!"
+          />
+          <meta
+            property="og:title"
+            content="Project Epoch | status tracker & chat"
+          />
+          <meta
+            property="og:description"
+            content="Project Epoch — real-time server status, patch updates, player chat, and instant notifications!"
+          />
+          <meta
+            property="og:image"
+            content="https://project-epoch.ru/vite.svg"
+          />
+          <meta property="og:type" content="website" />
+          <meta property="og:url" content="https://project-epoch.ru/" />
+        </Helmet>
+
+        <header className="bg-black/50 flex flex-wrap sm:flex-nowrap justify-between items-center rounded-b-2xl border-b border-cyan-800/30 shadow px-2 py-2 max-w-screen-lg mx-auto mb-4">
+          <div className="flex items-center gap-3 mb-2 sm:mb-0">
+            <LanguageSwitcher language={language} setLanguage={setLanguage} />
+            <BackgroundPicker />
+          </div>
+          <SoundSettings />
+        </header>
+        <main className="flex-1 flex flex-col">
+          
 
           <h1 className="text-1xl font-bold mb-4">{t.title}</h1>
 
