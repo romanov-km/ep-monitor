@@ -10,11 +10,8 @@ const app = express();
 const PORT = process.env.PORT || 3001;
 const DA_API_URL = "https://www.donationalerts.com/api/v1/alerts/donations";
 const ACCESS_TOKEN = process.env.DA_ACCESS_TOKEN;
-
-if (!process.env.REDIS_URL) {
-  console.error("❌ REDIS_URL не задан в переменных среды!");
-  process.exit(1);
-}
+// === Discord last messages (JS) ===
+const DISCORD_BOT_TOKEN = process.env.DISCORD_BOT_TOKEN;
 
 app.use(cors());
 
@@ -23,6 +20,17 @@ redis.connect().catch((err) => {
   console.error("❌ Ошибка подключения к Redis:", err);
   process.exit(1);
 });
+
+
+if (!DISCORD_BOT_TOKEN) {
+  console.warn("⚠️ DISCORD_BOT_TOKEN не задан. /api/discord/messages вернёт 500.");
+}
+
+
+if (!process.env.REDIS_URL) {
+  console.error("❌ REDIS_URL не задан в переменных среды!");
+  process.exit(1);
+}
 
 app.get("/api/health", async (req, res) => {
   try {
@@ -33,13 +41,93 @@ app.get("/api/health", async (req, res) => {
   }
 });
 
+// примитивное кэширование ответов, чтобы не ловить rate limit
+const discordCache = new Map(); // key: `${channelId}:${limit}` -> { ts, data }
+const DISCORD_TTL = 60_000; // 30 сек
+
+app.get("/api/discord/messages", async (req, res) => {
+  try {
+    const channelId = String(req.query.channelId || "");
+    const limit = Math.min(Number(req.query.limit || 3), 50);
+
+    if (!channelId) return res.status(400).json({ error: "channelId is required" });
+    if (!DISCORD_BOT_TOKEN) return res.status(500).json({ error: "No bot token" });
+
+    const key = `${channelId}:${limit}`;
+    const hit = discordCache.get(key);
+    const now = Date.now();
+    if (hit && (now - hit.ts) < DISCORD_TTL) {
+      return res.json(hit.data);
+    }
+
+    const url = `https://discord.com/api/v10/channels/${channelId}/messages?limit=${limit}`;
+    const resp = await fetch(url, {
+      headers: { Authorization: `Bot ${DISCORD_BOT_TOKEN}` }
+    });
+
+    if (!resp.ok) {
+      const text = await resp.text().catch(() => "");
+      return res.status(resp.status).json({ error: "Discord API error", details: text });
+    }
+
+    const messages = await resp.json(); // массив
+    const simplified = messages.map(m => {
+      // 1) Пытаемся взять обычный текст
+      let text = (m.content || "").trim();
+    
+      // 2) Если пусто — собираем текст из всех embed'ов
+      if (!text && Array.isArray(m.embeds) && m.embeds.length > 0) {
+        const parts = [];
+        for (const emb of m.embeds) {
+          if (emb.title) parts.push(emb.title);
+          if (emb.description) parts.push(emb.description);
+          if (Array.isArray(emb.fields)) {
+            for (const f of emb.fields) {
+              const name = f.name ? `**${f.name}**` : "";
+              const value = f.value || "";
+              if (name || value) parts.push([name, value].filter(Boolean).join("\n"));
+            }
+          }
+          if (emb.footer?.text) parts.push(emb.footer.text);
+        }
+        text = parts.join("\n\n").trim();
+      }
+    
+      // 3) Если вообще ничего — пометим как системное/вложение
+      if (!text && Array.isArray(m.attachments) && m.attachments.length > 0) {
+        text = "[Attachment]";
+      }
+      if (!text && m.type !== 0) {
+        text = "[System/Announcement]";
+      }
+    
+      return {
+        id: m.id,
+        content: text,
+        time: m.timestamp,
+        author: m.author?.global_name || m.author?.username || "unknown",
+        avatarUrl: m.author?.avatar
+          ? `https://cdn.discordapp.com/avatars/${m.author.id}/${m.author.avatar}.png`
+          : null,
+        attachment: m.attachments?.[0]?.url || null,
+        // type: m.type, flags: m.flags
+      };
+    });
+
+    discordCache.set(key, { ts: now, data: simplified });
+    res.json(simplified);
+  } catch (e) {
+    res.status(500).json({ error: "Discord fetch failed", details: e?.message });
+  }
+});
+
 app.get('/api/donations', async (req, res) => {
   try {
     const resp = await fetch(DA_API_URL, {
       headers: { Authorization: `Bearer ${ACCESS_TOKEN}` }
     });
     const data = await resp.json();
-    console.log("DA API ответ:", data); 
+    //console.log("DA API ответ:", data); 
     res.json(data.data.slice(0, 10)); // последние 10 донатов
   } catch (e) {
     res.status(500).json({ error: "DA API error", details: e.message });
