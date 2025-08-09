@@ -25,6 +25,7 @@ import { BackgroundPicker } from "../components/BackgroundPicker";
 import DonateCard from "../components/DonateCard";
 import VisibilityToggles from "../components/VisibilityToggles";
 import { uiStore } from "../stores/uiStore";
+import DiscordLastMessages from "../components/DiscordLastMessages";
 
 interface StatusEntry {
   time: string;
@@ -396,6 +397,7 @@ const App = observer(function App() {
               }}
             />
           }
+          <DiscordLastMessages channelId="1311703308129271908" limit={3}/>
         
           <section className="flex flex-col md:flex-row gap-4 mb-6">
             <div className="flex-1">
