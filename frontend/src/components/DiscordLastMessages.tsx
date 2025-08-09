@@ -13,7 +13,6 @@ interface Props {
   channelId: string;
   limit?: number;     // по умолчанию 3
   refreshMs?: number; // по умолчанию 30s
-  apiBase?: string;   // по умолчанию /api
 }
 
 const API_BASE = import.meta.env.VITE_API_BASE;
@@ -28,7 +27,6 @@ export default function DiscordLastMessages({
   channelId,
   limit = 3,
   refreshMs = 30_000,
-  apiBase = "/api",
 }: Props) {
   const [messages, setMessages] = useState<Msg[]>([]);
   const [loading, setLoading] = useState(true);
@@ -39,7 +37,7 @@ export default function DiscordLastMessages({
     try {
       setErr(null);
       const r = await fetch(
-        `${API_BASE}/discord/messages?channelId=${channelId}&limit=${limit}`
+        `${API_BASE}/api/discord/messages?channelId=${channelId}&limit=${limit}`
       );
       if (!r.ok) throw new Error(`HTTP ${r.status}`);
       const data = (await r.json()) as Msg[];
@@ -49,7 +47,7 @@ export default function DiscordLastMessages({
     } finally {
       setLoading(false);
     }
-  }, [apiBase, channelId, limit]);
+  }, [channelId, limit]);
 
   useEffect(() => {
     load();
