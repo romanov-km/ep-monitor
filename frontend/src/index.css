@@ -33,7 +33,7 @@ body {
   justify-content: center;
   background-color: #242424;
   /* background-image: url('/trol.png'); */
-  background: var(--site-bg, url('/raw.png') no-repeat center center fixed);
+  background: var(--site-bg, url("./assets/bg/raw.png") no-repeat center center fixed);
   background-size: cover;
   background-position: center;
   background-attachment: fixed;

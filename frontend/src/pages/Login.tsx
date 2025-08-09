@@ -1,7 +1,6 @@
-// public/bg-login.png 
-// public/fonts/morpheus.ttf 
-
 import React, { useState } from "react";
+import bg from '@/assets/bg/bg.png'
+import cloudsBack from '@/assets/bg/unnamed.png'
 
 const LoginPage: React.FC = () => {
   const [username, setUsername] = useState("");
@@ -18,14 +17,14 @@ const LoginPage: React.FC = () => {
     <div className="bg-gray-800 text-white min-h-screen min-w-screen relative">
       {/* Фон */}
       <img
-        src="/public/bg.png"
+        src={bg}
         alt="Fantasy jungle landscape"
         className="absolute inset-0 w-full h-full object-cover"
       />
 
       <div className="absolute top-0 left-0 w-full h-full z-0 animate-clouds-back">
     <img
-      src="/clouds-back.png"
+      src={cloudsBack}
       className="w-[200%] h-full object-cover opacity-30"
       alt="clouds back"
     />
