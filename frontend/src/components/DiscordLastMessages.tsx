@@ -16,6 +16,8 @@ interface Props {
   apiBase?: string;   // по умолчанию /api
 }
 
+const API_BASE = import.meta.env.VITE_API_BASE;
+
 /**
  * Простой список последних сообщений Discord (без слайдера).
  * — Показывает N последних сообщений.
@@ -37,7 +39,7 @@ export default function DiscordLastMessages({
     try {
       setErr(null);
       const r = await fetch(
-        `${apiBase}/discord/messages?channelId=${channelId}&limit=${limit}`
+        `${API_BASE}/discord/messages?channelId=${channelId}&limit=${limit}`
       );
       if (!r.ok) throw new Error(`HTTP ${r.status}`);
       const data = (await r.json()) as Msg[];
