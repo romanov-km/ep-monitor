@@ -22,7 +22,7 @@ except redis.exceptions.ConnectionError as e:
 API_URL= os.getenv("API_URL")
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 DISCORD_WEBHOOK_URL = os.getenv("DISCORD_WEBHOOK_URL")
-HOST = "57.128.162.57"
+HOST = "162.19.28.88"
 PORT = 3724
 CHECK_INTERVAL = 60
 LAST_UPDATE_ID = 0
