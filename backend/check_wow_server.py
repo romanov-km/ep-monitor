@@ -31,6 +31,11 @@ PATCH_MANIFEST_URL = os.getenv("PATCH_MANIFEST_URL")
 PATCH_CHECK_INTERVAL = 60
 REDIS_PATCH_KEY = "latest_patch_version"
 
+REALM_SERVERS = {
+    "Kezan": ("91.134.31.192", 8000),
+    "Gurubashi": ("91.134.31.192", 8001)
+}
+
 # Telegram
 
 from locales import translations
@@ -103,22 +108,40 @@ def log_realm_status(realm_name, msg):
         print(f"⚠️ Redis ошибка при записи логов: {e}")
 
 # Мониторинг статуса реалма через API
-def monitor_realm(realm_name):
-    last_status = None
+# def monitor_realm(realm_name):
+#     last_status = None
 
+#     while True:
+#         is_online, last_online = get_realm_status(realm_name)
+#         status = "UP" if is_online else "DOWN"
+#         icon = "🟢" if is_online else "🔴"
+#         timestamp = datetime.now().strftime("[%Y-%m-%d %H:%M:%S]")
+#         msg = f"{timestamp} Realm {realm_name} status: {icon} {status}"
+#         print(msg)
+
+#         log_realm_status(realm_name, msg)
+
+#         if last_status is not None and last_status != status:
+#             send_telegram_message_to_all(msg)
+#             send_discord_message(f"Realm {realm_name} status changed: {icon} {status}")
+
+#         last_status = status
+#         time.sleep(CHECK_INTERVAL)
+
+def monitor_realm_tcp(realm_name, ip, port):
+    last_status = None
     while True:
-        is_online, last_online = get_realm_status(realm_name)
+        is_online = check_tcp_port(ip, port)
         status = "UP" if is_online else "DOWN"
         icon = "🟢" if is_online else "🔴"
         timestamp = datetime.now().strftime("[%Y-%m-%d %H:%M:%S]")
-        msg = f"{timestamp} Realm {realm_name} status: {icon} {status}"
+        msg = f"{timestamp} Realm {realm_name} ({ip}:{port}) status: {icon} {status}"
         print(msg)
-
         log_realm_status(realm_name, msg)
 
         if last_status is not None and last_status != status:
             send_telegram_message_to_all(msg)
-            send_discord_message(f"Realm {realm_name} status changed: {icon} {status}")
+            send_discord_message(msg)
 
         last_status = status
         time.sleep(CHECK_INTERVAL)
@@ -340,8 +363,11 @@ if __name__ == "__main__":
     
     threading.Thread(target=monitor_auth, daemon=True).start()
 
-    for realm in REALMS:
-        threading.Thread(target=monitor_realm, args=(realm,), daemon=True).start()
+    for realm, (ip, port) in REALM_SERVERS.items():
+        threading.Thread(target=monitor_realm_tcp, args=(realm, ip, port), daemon=True).start()
+
+    # for realm in REALMS:
+    #     threading.Thread(target=monitor_realm, args=(realm,), daemon=True).start()
     
     threading.Thread(target=monitor_patch_version, daemon=True).start()
 
