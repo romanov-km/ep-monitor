@@ -154,8 +154,10 @@ def remove_user(chat_id):
     except Exception as e:
         print(f"⚠️ Redis error while removing user: {e}")
 
+import random
+
 def send_telegram_message(chat_id, message):
-    lang = get_user_lang(chat_id)  # Получаем язык пользователя
+    lang = get_user_lang(chat_id)
     url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
 
     keyboard = {
@@ -174,22 +176,55 @@ def send_telegram_message(chat_id, message):
         ]
     }
 
-    payload = {
-        "chat_id": chat_id,
-        "text": message,
-        "reply_markup": keyboard
-    }
+    payload = {"chat_id": chat_id, "text": message, "reply_markup": keyboard}
 
-    try:
-        resp = requests.post(url, json=payload, timeout=5)
-        if resp.status_code != 200:
+    # до 3 попыток с экспоненциальным бэкоффом на случай 429/сетевых
+    delay = 0.5
+    for attempt in range(3):
+        try:
+            resp = requests.post(url, json=payload, timeout=5)
+            if resp.status_code == 200:
+                return True
+
+            # Обрабатываем частые кейсы
+            if resp.status_code in (400, 403):
+                # 400: Bad Request: chat not found / message to be deleted not found
+                # 403: Forbidden: bot was blocked by the user / user is deactivated / bot was kicked from the group
+                print(f"⚠️ Telegram error {chat_id}: {resp.status_code} — {resp.text}")
+                remove_user(chat_id)  # вычищаем из подписчиков
+                return False
+
+            if resp.status_code == 429:
+                # Too Many Requests — уважаем retry_after, если есть
+                try:
+                    retry_after = resp.json().get("parameters", {}).get("retry_after", None)
+                except Exception:
+                    retry_after = None
+                sleep_for = (retry_after or delay) + random.uniform(0, 0.5)
+                time.sleep(sleep_for)
+                delay *= 2
+                continue
+
+            # Прочие коды — пробуем повторить с бэкоффом
             print(f"⚠️ Telegram error {chat_id}: {resp.status_code} — {resp.text}")
-    except Exception as e:
-        print(f"‼️ Telegram send error: {e}")
+            time.sleep(delay)
+            delay *= 2
 
-def send_telegram_message_to_all(message):
-    for uid in load_users():
-        send_telegram_message(uid, message)
+        except Exception as e:
+            print(f"‼️ Telegram send error: {e}")
+            time.sleep(delay)
+            delay *= 2
+
+    return False
+
+
+def send_telegram_message_to_all(message, batch_size=30, pause=0.6):
+    users = list(load_users())  # снимай срез, чтобы не итерироваться по меняющемуся set
+    for i in range(0, len(users), batch_size):
+        chunk = users[i:i+batch_size]
+        for uid in chunk:
+            send_telegram_message(uid, message)
+        time.sleep(pause)  # мягкий троттлинг между батчами
 
 def update_new_users():
     global LAST_UPDATE_ID
