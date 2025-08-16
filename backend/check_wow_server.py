@@ -135,7 +135,8 @@ def monitor_realm_tcp(realm_name, ip, port):
         status = "UP" if is_online else "DOWN"
         icon = "🟢" if is_online else "🔴"
         timestamp = datetime.now().strftime("[%Y-%m-%d %H:%M:%S]")
-        msg = f"{timestamp} Realm {realm_name} ({ip}:{port}) status: {icon} {status}"
+        msg = f"[{timestamp}] Realm {realm_name} status: {icon} {status}"
+        # msg = f"{timestamp} Realm {realm_name} ({ip}:{port}) status: {icon} {status}"
         print(msg)
         log_realm_status(realm_name, msg)
 
