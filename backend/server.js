@@ -32,6 +32,15 @@ if (!process.env.REDIS_URL) {
   process.exit(1);
 }
 
+function parseLogTimestamp(raw) {
+  if (!raw) return null;
+  const s = String(raw).replace(/\u00A0/g, " ").trim(); // NBSP → space
+  const m = s.match(/^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2}):(\d{2})$/);
+  if (!m) return null;
+  const [_, Y, M, D, h, mi, se] = m;
+  return new Date(Date.UTC(+Y, +M - 1, +D, +h, +mi, +se));
+}
+
 app.get("/api/health", async (req, res) => {
   try {
     await redis.ping();
@@ -298,38 +307,34 @@ app.get("/api/realm-chart", async (req, res) => {
 
 app.get("/api/realm-status", async (req, res) => {
   try {
-    // список реалмов (можно вынести в .env или в Redis позже)
-    const realms = [
-      "Kezan",
-      "Gurubashi",
-    ];
-
+    const realms = ["Kezan", "Gurubashi"];
     const statuses = [];
 
     for (const realmKey of realms) {
-      const logs = await redis.lRange(`logs:${realmKey}`, 0, 0); // только последний лог
+      const logs = await redis.lRange(`logs:${realmKey}`, 0, 0);
       if (!logs.length) continue;
 
       const line = logs[0];
-      const match = line.match(/^\[(.*?)\] Realm (.*) status: (🟢|🔴) (UP|DOWN)/);
-      if (!match) continue;
 
-      const [, rawTime, name, icon, status] = match;
+      // [ts] Realm Kezan status: 🔴 DOWN
+      // [ts] Realm Kezan (1.2.3.4:8000) status: 🔴 DOWN
+      const re = /^\[(.*?)\]\s+Realm\s+(.+?)(?:\s+\([^)]+\))?\s+status:\s+(🟢|🔴)\s+(UP|DOWN)/u;
+      const m = line.match(re);
+      if (!m) continue;
 
-      const timestamp = new Date(rawTime.replace(" ", "T") + "Z");
+      const [, rawTime, rawName, icon, status] = m;
+      const ts = parseLogTimestamp(rawTime);
+      if (!ts || Number.isNaN(ts.getTime())) continue;
 
-      statuses.push({
-        name,
-        time: timestamp.toISOString(),
-        icon,
-        status,
-      });
+      const name = rawName.replace(/\s*\([^)]*\)/, "").trim();
+
+      statuses.push({ name, time: ts.toISOString(), icon, status });
     }
 
     res.json(statuses);
   } catch (err) {
     console.error("Ошибка /api/realm-status:", err);
-    res.status(500).json({ error: "Failed to get realm statuses" });
+    res.status(500).json({ error: "Failed to get realm statuses", details: String(err?.message || err) });
   }
 });
 

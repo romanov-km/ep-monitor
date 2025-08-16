@@ -108,25 +108,6 @@ def log_realm_status(realm_name, msg):
         print(f"⚠️ Redis ошибка при записи логов: {e}")
 
 # Мониторинг статуса реалма через API
-# def monitor_realm(realm_name):
-#     last_status = None
-
-#     while True:
-#         is_online, last_online = get_realm_status(realm_name)
-#         status = "UP" if is_online else "DOWN"
-#         icon = "🟢" if is_online else "🔴"
-#         timestamp = datetime.now().strftime("[%Y-%m-%d %H:%M:%S]")
-#         msg = f"{timestamp} Realm {realm_name} status: {icon} {status}"
-#         print(msg)
-
-#         log_realm_status(realm_name, msg)
-
-#         if last_status is not None and last_status != status:
-#             send_telegram_message_to_all(msg)
-#             send_discord_message(f"Realm {realm_name} status changed: {icon} {status}")
-
-#         last_status = status
-#         time.sleep(CHECK_INTERVAL)
 
 def monitor_realm_tcp(realm_name, ip, port):
     last_status = None
@@ -136,7 +117,6 @@ def monitor_realm_tcp(realm_name, ip, port):
         icon = "🟢" if is_online else "🔴"
         timestamp = datetime.now().strftime("[%Y-%m-%d %H:%M:%S]")
         msg = f"[{timestamp}] Realm {realm_name} status: {icon} {status}"
-        # msg = f"{timestamp} Realm {realm_name} ({ip}:{port}) status: {icon} {status}"
         print(msg)
         log_realm_status(realm_name, msg)
 
