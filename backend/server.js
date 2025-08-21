@@ -307,7 +307,7 @@ app.get("/api/realm-chart", async (req, res) => {
 
 app.get("/api/realm-status", async (req, res) => {
   try {
-    const realms = ["Kezan", "Gurubashi", "Kezan-2", "Gurubashi-2"];
+    const realms = ["Kezan", "Gurubashi"];
     const statuses = [];
 
     for (const realmKey of realms) {
