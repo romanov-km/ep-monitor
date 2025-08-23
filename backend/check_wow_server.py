@@ -33,7 +33,7 @@ REDIS_PATCH_KEY = "latest_patch_version"
 
 REALM_SERVERS = {
     "Kezan": ("135.125.119.89", 8000),
-    "Gurubashi-2": ("135.125.119.89", 8001)
+    "Gurubashi": ("135.125.119.89", 8001)
 }
 
 # Telegram
